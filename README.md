@@ -4,7 +4,7 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
-La versión local 0.1.0 terminó sus pruebas e instalación. La versión 0.2.0 incorpora una barra lateral nativa a la izquierda y actualizaciones firmadas desde GitHub; se está compilando y comprobando. No debe considerarse publicada hasta que exista su Release con el instalador y el manifiesto firmado.
+La versión 0.2.0 terminó la compilación, las pruebas del navegador y la actualización de la instalación local en Windows x64. Se verificaron navegación, aislamiento de APIs, extensiones MV3, rechazo de certificados no confiables, tema nativo, barra izquierda y alarma de actualizaciones. Descarga los archivos publicados en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
 
 ## Interfaz
 
@@ -36,3 +36,4 @@ Se necesita Windows x64, Node 24, pnpm, Git, Visual Studio 2026 Build Tools con 
 La publicación del canal requiere la clave privada del editor. No crees una clave diferente para publicar actualizaciones destinadas a instalaciones existentes. Véase `docs/UPDATES.md`.
 
 El instalador crea accesos que abren directamente `veyrion.exe` con icono y perfil propios. No recurre al Brave instalado. Para fijar el icono permanentemente usa «Anclar a la barra de tareas».
+
