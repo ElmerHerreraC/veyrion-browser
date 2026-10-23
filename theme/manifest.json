@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Veyrion · Violeta nocturno",
+  "version": "0.1.0",
+  "theme": {
+    "colors": {
+      "frame": [15, 12, 24],
+      "frame_inactive": [22, 19, 30],
+      "toolbar": [27, 23, 39],
+      "tab_text": [245, 240, 255],
+      "tab_background_text": [166, 155, 191],
+      "bookmark_text": [226, 218, 242],
+      "ntp_background": [12, 12, 19],
+      "ntp_text": [243, 240, 252],
+      "button_background": [164, 139, 255, 0.12]
+    },
+    "properties": {"color_scheme": "dark"}
+  }
+}

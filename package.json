@@ -1,0 +1,16 @@
+{
+  "name": "veyrion-browser-workspace",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "start": "node tools/launch.mjs",
+    "check": "node tools/build.mjs check",
+    "init": "node tools/build.mjs init",
+    "build": "node tools/build.mjs build",
+    "test": "node --test tests/*.test.mjs",
+    "verify": "node tools/verify.mjs",
+    "native:brand": "node tools/brand-native.mjs",
+    "native:integrate": "node tools/integrate-native.mjs"
+  }
+}

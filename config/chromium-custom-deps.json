@@ -1,0 +1,14 @@
+{
+  "src/third_party/updater/chrome_win_arm64/cipd": null,
+  "src/third_party/updater/chrome_win_x86/cipd": null,
+  "src/third_party/updater/chrome_win_x86_64/cipd": null,
+  "src/third_party/updater/chrome_win_arm64_sans_iid/cipd": null,
+  "src/third_party/updater/chrome_win_x86_sans_iid/cipd": null,
+  "src/third_party/updater/chrome_win_x86_64_sans_iid/cipd": null,
+  "src/third_party/updater/chromium_win_arm64/cipd": null,
+  "src/third_party/updater/chromium_win_x86/cipd": null,
+  "src/third_party/updater/chromium_win_x86_64/cipd": null,
+  "src/third_party/updater/chromium_win_arm64_sans_iid/cipd": null,
+  "src/third_party/updater/chromium_win_x86_sans_iid/cipd": null,
+  "src/third_party/updater/chromium_win_x86_64_sans_iid/cipd": null
+}

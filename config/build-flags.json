@@ -1,0 +1,11 @@
+{
+  "enable_brave_wallet": false,
+  "enable_brave_rewards": false,
+  "enable_ai_chat": false,
+  "enable_brave_vpn_v1": false,
+  "enable_brave_vpn_v2": false,
+  "brave_product_name": "veyrion",
+  "brave_exe": "veyrion",
+  "enable_updater": false,
+  "symbol_level": 0
+}

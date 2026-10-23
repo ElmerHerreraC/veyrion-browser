@@ -1,0 +1,11 @@
+src/
+.preview-profile/
+.verify-profile/
+artifacts/
+node_modules/
+config/build-machine.json
+dist/
+*.lnk
+*.pem
+*.key
+publish-source/

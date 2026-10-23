@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/brave/brave-core.git",
+  "tag": "v1.97.59",
+  "commit": "c7357bfd2a76c2467ba1ae62593a81ae92c05205",
+  "branch": "nebula-gx",
+  "chromiumTag": "155.0.8059.85",
+  "chromiumCommit": "0e66b94549a8bd85f03fbdf189b752d6e7b63c32",
+  "note": "Base fijada para desarrollo y pruebas. Revisar actualizaciones de seguridad antes de distribuir."
+}
