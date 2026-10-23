@@ -195,6 +195,7 @@ void SidebarWebPanelController::DidFinishNavigation(
 
 void SidebarWebPanelController::CloseWebPanel() {
   Observe(nullptr);`))
+  edit('browser/ui/sidebar/sidebar_web_panel_controller.cc', 'preferences.viewport_style = mobile', text => text.replace('  preferences.viewport_meta_enabled = mobile;', '  preferences.viewport_meta_enabled = mobile;\n  preferences.viewport_style = mobile ? blink::mojom::ViewportStyle::kMobile\n                                      : blink::mojom::ViewportStyle::kDefault;'))
 
   edit('browser/ui/views/frame/split_view/brave_multi_contents_view_mini_toolbar.h', 'veyrion_mobile_button_', text => text.replace('  bool is_active_ = false;', '  raw_ptr<views::LabelButton> veyrion_mobile_button_ = nullptr;\n  bool is_active_ = false;').replace('#include "ui/color/color_id.h"', '#include "ui/color/color_id.h"\n#include "ui/views/controls/button/label_button.h"'))
   edit('browser/ui/views/frame/split_view/brave_contents_container_view.cc', '// Veyrion: keep panel controls visible', text => text.replace('mini_toolbar->SetAlwaysShowDomain(show_domain);', 'mini_toolbar->SetAlwaysShowDomain(for_web_panel_ || show_domain);').replace('    mini_toolbar_->SetVisible(!IsActive());', '    // Veyrion: keep panel controls visible while typing or navigating.\n    mini_toolbar_->SetVisible(true);'))
@@ -225,6 +226,8 @@ void SidebarWebPanelController::CloseWebPanel() {
         ? u"Cambiar este panel a vista de escritorio"
         : u"Cambiar este panel a vista de celular");
   }`))
+  edit('browser/ui/views/frame/split_view/brave_multi_contents_view_mini_toolbar.cc', 'veyrion_mobile_button_->SetTextSubpixelRenderingEnabled(false)', text => text.replace('    veyrion_mobile_button_->SetVisible(style_ == Style::kWebPanel);', '    veyrion_mobile_button_->SetTextSubpixelRenderingEnabled(false);\n    veyrion_mobile_button_->SetVisible(style_ == Style::kWebPanel);'))
+  edit('browser/ui/views/sidebar/sidebar_add_item_bubble_delegate_view.cc', 'caption->SetSubpixelRenderingEnabled(false)', text => text.replace('  caption->SetHorizontalAlignment', '  caption->SetSubpixelRenderingEnabled(false);\n  caption->SetHorizontalAlignment').replace('  add->SetTooltipText', '  add->SetTextSubpixelRenderingEnabled(false);\n  add->SetTooltipText').replace('  veyrion_error_->SetMultiLine(true);', '  veyrion_error_->SetSubpixelRenderingEnabled(false);\n  veyrion_error_->SetMultiLine(true);'))
   console.log('Paneles Veyrion: direccion libre, ancho arrastrable y vista movil integrados.')
   edit('browser/ui/color/material_brave_color_mixer.cc', '// Veyrion desktop surfaces', text => text.replace('#include "ui/color/color_provider.h"', '#include "ui/color/color_provider.h"\n#include "ui/color/color_id.h"').replace('  // Use leo color when', `  // Veyrion desktop surfaces keep the accent separate from the dark frame.
   if (is_dark) {
@@ -258,3 +261,4 @@ void SidebarWebPanelController::CloseWebPanel() {
       IconDimensionForLayout(), provider->GetColor(kColorOmniboxResultsIcon));
 }`))
 }
+

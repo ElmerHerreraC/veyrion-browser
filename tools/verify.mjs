@@ -16,7 +16,9 @@ await fs.mkdir(path.join(root, 'artifacts'), { recursive: true })
 const child = spawn(executable, [
   '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
   ...(loadExtensions.length ? [`--load-extension=${loadExtensions.join(',')}`] : []), '--no-first-run', '--no-default-browser-check', 'brave://newtab/'
-], { stdio: 'ignore', windowsHide: true })
+], { stdio: ['ignore','ignore','pipe'], windowsHide: true })
+child.stderr.on('data', data => { fs.appendFile(path.join(root,'artifacts/native-runtime-stderr.log'),data).catch(()=>{}) })
+child.on('exit', (code,signal) => { if(process.env.VEYRION_VERIFY_TRACE==='1') console.log('BROWSER EXIT',code,signal) })
 child.on('error', error => console.error(error.message))
 let socket
 let tlsServer
@@ -35,12 +37,13 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 function cdp(method, params = {}) {
   return new Promise((resolve, reject) => {
     const id = ++sequence
-    const timer = setTimeout(() => { pending.delete(id); reject(new Error('CDP timeout: ' + method)) }, 15000)
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error('CDP timeout: ' + method + ' ' + String(params.expression || '').slice(0,180))) }, 15000)
     pending.set(id, { resolve: value => { clearTimeout(timer); resolve(value) }, reject })
     socket.send(JSON.stringify({ id, method, params }))
   })
 }
 async function evaluate(expression) {
+  if (process.env.VEYRION_VERIFY_TRACE === '1') console.log('VERIFY', expression.slice(0,180))
   const response = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
   if (response.exceptionDetails) throw new Error(JSON.stringify(response.exceptionDetails))
   return response.result.value
@@ -152,6 +155,7 @@ try {
       await delay(100)
     }
     assert.ok(panelTarget,'Una página arbitraria debe abrirse en el panel nativo')
+    if(process.env.VEYRION_VERIFY_TRACE==='1') console.log('PANEL TARGET',JSON.stringify(panelTarget))
     const panelSocket=new WebSocket(panelTarget.webSocketDebuggerUrl)
     await new Promise((resolve,reject)=>{panelSocket.onopen=resolve;panelSocket.onerror=reject})
     let panelSequence=0
@@ -260,3 +264,4 @@ try {
   if (socket?.readyState === WebSocket.OPEN) { try { await cdp('Browser.close') } catch {} socket.close() }
   if (child.exitCode === null) child.kill()
 }
+

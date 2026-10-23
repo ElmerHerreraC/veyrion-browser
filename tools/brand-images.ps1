@@ -5,7 +5,7 @@ $project = Split-Path -Parent $PSScriptRoot
 $logo = [Drawing.Image]::FromFile((Join-Path $project 'extension/icons/icon256.png'))
 try {
   $files = Get-ChildItem -LiteralPath (Join-Path $Source 'app/theme') -Recurse -File -Filter '*.png' | Where-Object {
-    $_.Name -match '^product_logo(?:_|\.)' -or $_.Name -match '^avatar_.*_(brave|rewards)\.png$'
+    $_.Name -match '^product_logo(?:_|\.)' -or $_.Name -match '^avatar_.*_(brave|rewards)\.png$' -or $_.Name -match '^(Small)?Logo\.png$'
   }
   foreach ($file in $files) {
     $original = [Drawing.Image]::FromFile($file.FullName)
@@ -29,3 +29,4 @@ try {
   }
   Write-Output "Logotipos y avatares propios: $($files.Count)"
 } finally { $logo.Dispose() }
+
