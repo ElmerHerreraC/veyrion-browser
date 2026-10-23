@@ -37,6 +37,10 @@ function apply() {
   document.body.dataset.ambient = state.ambient
   document.body.dataset.density = state.density
   document.body.dataset.effect = state.effect
+  document.body.dataset.frameStyle = state.frameStyle
+  document.body.dataset.interfaceFont = state.interfaceFont
+  document.documentElement.style.setProperty('--tile-size', `${state.tileSize}px`)
+  document.documentElement.style.setProperty('--panel-opacity', `${state.panelOpacity}%`)
   document.body.classList.toggle('hide-sidebar', !state.showSidebar)
   $('.notes-card').hidden = !state.showNotes
   $('footer div').hidden = !state.showClock

@@ -12,7 +12,7 @@
     <div class="rail-bottom"><button data-page="settings" title="Ajustes del navegador" aria-label="Ajustes del navegador">⚙</button><button id="customize" title="Personalizar inicio" aria-label="Personalizar inicio">◈</button></div>
   </aside>
   <main>
-    <header><div class="wordmark">VEYRION <span>PERSONAL SPACE / 02</span></div><button id="customize-top" class="outline">◈ &nbsp; Personalizar</button></header>
+    <header><div class="wordmark">VEYRION <span>TU ZONA DE NAVEGACIÓN</span></div><button id="customize-top" class="outline">◈ &nbsp; Configuración rápida</button></header>
     <section class="hero">
       <div class="eyebrow"><span class="live-dot"></span> TU ESPACIO. TUS REGLAS.</div>
       <h1>Abre otra<br><span>dimensión.</span></h1>
@@ -21,7 +21,7 @@
       <div class="search-caption"><span id="engine-label">DuckDuckGo</span><span>BUSCA O ESCRIBE UNA DIRECCIÓN</span></div>
     </section>
     <section class="workspace">
-      <div class="links-section"><div class="section-heading"><h2>Acceso directo</h2><button id="add-link">+ Añadir</button></div><div id="shortcuts" class="shortcuts"></div>
+      <div class="links-section"><div class="section-heading"><h2>Acceso rápido</h2><button id="add-link">+ Añadir</button></div><div id="shortcuts" class="shortcuts"></div>
       <div class="engine-card"><span class="card-symbol">✧</span><div><h3>Tu navegador, completo</h3><p>Gestiona y añade tus extensiones.</p></div><button data-page="extensions">Abrir ↗</button></div></div>
       <div class="notes-card"><div class="section-heading"><h2>Bloc rápido</h2><span id="note-status">LOCAL</span></div><textarea id="notes" aria-label="Notas personales" placeholder="Una idea para después…" maxlength="12000"></textarea><p>Guardado en este perfil. Sin sincronización.</p></div>
     </section>
@@ -39,14 +39,24 @@
     <label for="brightness">Luminosidad del fondo</label><input id="brightness" type="range" min="20" max="100" data-setting="brightness">
     <label for="blur">Desenfoque del fondo</label><input id="blur" type="range" min="0" max="20" data-setting="blur">
     <label for="effect">Efecto visual del inicio</label><select id="effect" data-setting="effect"><option value="none">Sin efecto</option><option value="scanlines">Líneas retro</option><option value="vignette">Viñeta</option></select>
+    <label for="web-effect">Filtro visual al navegar por sitios web</label><select id="web-effect" data-setting="webEffect"><option value="none">Sin filtro</option><option value="warm">Cálido</option><option value="night">Nocturno</option><option value="mono">Monocromo</option></select><p class="help">También se aplica a los paneles web. Puedes desactivarlo aquí en cualquier momento.</p>
     </section>
     <section data-section="audio" hidden><h3>Un espacio que suena a ti</h3><p class="help">Sonidos de interacción, escritura y música sintetizada en esta página. El audio comienza después de interactuar y se detiene al salir del inicio.</p>
       <label class="toggle"><input type="checkbox" data-setting="sounds"> Sonidos de botones y teclado</label>
+      <label class="toggle"><input type="checkbox" data-setting="webSounds"> Sonidos de clic y teclado al navegar por sitios web</label>
       <label for="sound-pack">Estilo de sonido</label><select id="sound-pack" data-setting="soundPack"><option value="glass">Cristal</option><option value="arcade">Arcade</option><option value="soft">Suave</option></select>
       <label for="volume">Volumen</label><input id="volume" type="range" min="0" max="100" data-setting="volume">
       <button id="test-sound" class="outline">Probar sonido</button><label class="toggle"><input type="checkbox" data-setting="music"> Música ambiental</label><span id="audio-status" class="help">Audio en pausa hasta interactuar.</span>
     </section>
-    <section data-section="layout" hidden><label for="density">Densidad</label><select id="density" data-setting="density"><option value="comfortable">Cómoda</option><option value="compact">Compacta</option></select><label class="toggle"><input type="checkbox" data-setting="showNotes"> Mostrar bloc de notas</label><label class="toggle"><input type="checkbox" data-setting="showClock"> Mostrar reloj</label><label class="toggle"><input type="checkbox" data-setting="showSidebar"> Mostrar barra lateral del inicio</label></section>
+    <section data-section="layout" hidden>
+      <label for="frame-style">Estilo de interfaz</label><select id="frame-style" data-setting="frameStyle"><option value="angular">Angular · Gaming</option><option value="glass">Cristal · Transparente</option><option value="classic">Clásico · Editorial</option></select>
+      <label for="interface-font">Tipografía del inicio</label><select id="interface-font" data-setting="interfaceFont"><option value="system">Sistema</option><option value="mono">Terminal</option><option value="rounded">Redondeada</option></select>
+      <label for="tile-size">Tamaño de accesos rápidos</label><input id="tile-size" data-setting="tileSize" type="range" min="100" max="210">
+      <label for="panel-opacity">Opacidad de las tarjetas</label><input id="panel-opacity" data-setting="panelOpacity" type="range" min="35" max="100">
+      <label for="density">Densidad</label><select id="density" data-setting="density"><option value="comfortable">Cómoda</option><option value="compact">Compacta</option></select><label class="toggle"><input type="checkbox" data-setting="showNotes"> Mostrar bloc de notas</label><label class="toggle"><input type="checkbox" data-setting="showClock"> Mostrar reloj</label><label class="toggle"><input type="checkbox" data-setting="showSidebar"> Mostrar barra lateral del inicio</label>
+      <p class="help">Barra nativa: usa + para agregar una dirección HTTP/HTTPS. Arrastra el borde del panel para cambiar su ancho. El botón Celular / Escritorio cambia la vista de ese sitio y conserva la elección. Algunos sitios solo ofrecen una versión de escritorio.</p>
+      <h3>Paneles web</h3><form id="panel-form"><label for="panel-url">Página para la barra izquierda</label><input id="panel-url" placeholder="https://ejemplo.com" required><label class="toggle"><input id="panel-mobile" type="checkbox"> Preferir vista de celular</label><button class="outline" type="submit">Agregar a la barra</button></form><label for="panel-width">Ancho del panel (240–1000 px)</label><input id="panel-width" type="range" min="240" max="1000" value="380"><p id="panel-status" class="help" role="status"></p>
+    </section>
     <section data-section="mods" hidden><h3>Ambientes completos</h3><p class="help">Aplica un conjunto de colores, efectos y sonido. Los mods de Veyrion contienen preferencias; no ejecutan código ni son compatibles con los paquetes de Opera GX.</p><div class="presets"><button data-preset="obsidian">Obsidiana <small>Violeta · Cristal</small></button><button data-preset="terminal">Terminal <small>Lima · Arcade</small></button><button data-preset="aurora">Aurora <small>Cian · Suave</small></button><button data-preset="sakura">Sakura <small>Rosa · Órbita</small></button></div><button id="export-mod" class="outline">Exportar mi mod</button><label for="import-mod">Importar mod Veyrion (.json)</label><input id="import-mod" type="file" accept="application/json,.json"><button id="reset-look" class="outline">Restablecer apariencia</button></section>
     <button id="apply-browser-color" class="outline" type="button">Aplicar color a pestañas y barra</button>
     <label class="toggle"><input type="checkbox" data-setting="syncNativeTheme"> Sincronizar el color con toda la ventana</label>

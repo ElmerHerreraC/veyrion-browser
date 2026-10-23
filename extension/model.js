@@ -4,6 +4,8 @@ export const defaults = {
   brightness: 70, blur: 0, density: 'comfortable', effect: 'none',
   sounds: false, soundPack: 'glass', volume: 25, music: false,
   showNotes: true, showClock: true, showSidebar: false, syncNativeTheme: true,
+  frameStyle: 'angular', tileSize: 140, interfaceFont: 'system', panelOpacity: 85,
+  webEffect: 'none', webSounds: false,
   shortcuts: [
     { title: 'YouTube', url: 'https://www.youtube.com/' },
     { title: 'GitHub', url: 'https://github.com/' },
@@ -46,6 +48,11 @@ export function normalize(raw = {}) {
   for (const key of ['sounds', 'music', 'useCustomColor']) value[key] = value[key] === true
   for (const key of ['showNotes', 'showClock', 'showSidebar']) value[key] = value[key] !== false
   value.syncNativeTheme = value.syncNativeTheme !== false
+  value.webSounds = value.webSounds === true
+  if (!['none', 'warm', 'night', 'mono'].includes(value.webEffect)) value.webEffect = defaults.webEffect
+  if (!['angular', 'glass', 'classic'].includes(value.frameStyle)) value.frameStyle = defaults.frameStyle
+  if (!['system', 'mono', 'rounded'].includes(value.interfaceFont)) value.interfaceFont = defaults.interfaceFont
+  for (const [key, min, max] of [['tileSize', 100, 210], ['panelOpacity', 35, 100]]) value[key] = Number.isFinite(Number(value[key])) ? Math.min(max, Math.max(min, Number(value[key]))) : defaults[key]
   for (const [key, min, max] of [['brightness', 20, 100], ['blur', 0, 20], ['volume', 0, 100]]) value[key] = Number.isFinite(Number(value[key])) ? Math.min(max, Math.max(min, Number(value[key]))) : defaults[key]
   if (!/^#[a-f0-9]{6}$/i.test(value.customColor)) value.customColor = defaults.customColor
   if (!['comfortable', 'compact'].includes(value.density)) value.density = defaults.density

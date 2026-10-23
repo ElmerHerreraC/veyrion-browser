@@ -3,11 +3,13 @@ import path from 'node:path'
 import { root } from './paths.mjs'
 import { integrateNativeTheme } from './integrate-native-theme.mjs'
 import { integrateNativeSidebar } from './integrate-native-sidebar.mjs'
+import { integrateNativePanels } from './integrate-native-panels.mjs'
+import { integratePanelApi } from './integrate-panel-api.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
 const component = path.join(source, 'components/brave_extension/extension')
 const destination = path.join(component, 'brave_extension/veyrion_start')
 fs.mkdirSync(destination, { recursive: true })
-const files = ['index.html', 'style.css', 'customization.css', 'app.js', 'customization.js', 'model.js', 'update-core.js', 'updates.js', 'updates-background.js', 'update-config.json', ...[16, 32, 48, 128, 256].map(size => `icons/icon${size}.png`)]
+const files = ['index.html', 'style.css', 'customization.css', 'app.js', 'customization.js', 'model.js', 'web-appearance.js', 'update-core.js', 'updates.js', 'updates-background.js', 'update-config.json', ...[16, 32, 48, 128, 256].map(size => `icons/icon${size}.png`)]
 for (const file of files) {
   const target = path.join(destination, file)
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -17,6 +19,8 @@ const manifestPath = path.join(component, 'brave_extension/manifest.json')
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
 manifest.name = 'Veyrion Core'
 manifest.description = 'Integración de navegación y página de inicio de Veyrion.'
+manifest.icons = Object.fromEntries([16,32,48,128,256].map(size => [size, `veyrion_start/icons/icon${size}.png`]))
+manifest.content_scripts = [...(manifest.content_scripts || []).filter(item => !item.js?.includes('veyrion_start/web-appearance.js')), {matches:['http://*/*','https://*/*'],js:['veyrion_start/web-appearance.js'],run_at:'document_idle',all_frames:false}]
 manifest.permissions = [...new Set([...manifest.permissions, 'downloads'])]
 const updateScripts = ['veyrion_start/update-core.js', 'veyrion_start/updates-background.js']
 manifest.background = { scripts: updateScripts, persistent: true }
@@ -40,4 +44,6 @@ if (ids.split('"' + resourceKey + '"').length !== 2) throw new Error('La tabla d
 fs.writeFileSync(idsPath, ids)
 integrateNativeTheme(source)
 integrateNativeSidebar(source)
+integrateNativePanels(source)
+integratePanelApi(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')

@@ -2,3 +2,26 @@
 body{isolation:isolate}
 
 .update-card{margin-top:24px;padding:20px;border:1px solid rgba(var(--rgb),.35);border-radius:12px;background:rgba(var(--rgb),.06)}.update-card button{margin:8px 8px 8px 0}.settings-tabs{flex-wrap:wrap}body.hide-sidebar #customize-top{border-color:var(--accent);box-shadow:0 0 18px rgba(var(--rgb),.12)}
+/* Veyrion gaming workspace: native sidebar remains outside this page. */
+body:not([data-frame-style=classic]) main{max-width:1440px;margin-right:auto;padding-top:24px}
+body:not([data-frame-style=classic]) .hero{max-width:640px;margin:10vh auto 0;padding:0}
+body:not([data-frame-style=classic]) .hero h1,body:not([data-frame-style=classic]) .hero .subtitle,body:not([data-frame-style=classic]) .hero .eyebrow{display:none}
+body:not([data-frame-style=classic]) .search{border-radius:5px;background:color-mix(in srgb,#191424 var(--panel-opacity),transparent);border:1px solid rgba(var(--rgb),.48);box-shadow:0 0 35px rgba(var(--rgb),.08)}
+body:not([data-frame-style=classic]) .workspace{margin:7vh auto 0;max-width:1050px;grid-template-columns:minmax(0,1fr) 250px;gap:26px}
+body:not([data-frame-style=classic]) .shortcuts{grid-template-columns:repeat(auto-fit,minmax(min(var(--tile-size),100%),1fr));gap:18px}
+body:not([data-frame-style=classic]) .shortcut{border-radius:4px;min-height:112px;border:1px solid rgba(var(--rgb),.32);background:linear-gradient(135deg,rgba(var(--rgb),.09),transparent),color-mix(in srgb,#191424 var(--panel-opacity),transparent);transition:transform .16s,border-color .16s,box-shadow .16s}
+body:not([data-frame-style=classic]) .shortcut:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 0 22px rgba(var(--rgb),.17)}
+body:not([data-frame-style=classic]) .letter{border-radius:5px;color:var(--accent);font-size:30px;border:1px solid rgba(var(--rgb),.3);background:rgba(var(--rgb),.08)}
+body:not([data-frame-style=classic]) .notes-card,body:not([data-frame-style=classic]) .engine-card{border-radius:5px;background:color-mix(in srgb,#191424 var(--panel-opacity),transparent);border-color:rgba(var(--rgb),.23)}
+body:not([data-frame-style=classic]) .section-heading h2{text-transform:uppercase;font-size:11px;letter-spacing:2px}
+body:not([data-frame-style=classic]) #settings-dialog{position:fixed;inset:0 0 0 auto;margin:0;height:100dvh;max-height:100dvh;width:min(460px,100vw);max-width:none;border-radius:0;border:0;border-left:1px solid var(--accent);padding:28px;background:#15101e;box-shadow:-24px 0 100px #0008}
+body:not([data-frame-style=classic]) #settings-dialog::backdrop{background:#07040b50;backdrop-filter:blur(3px)}
+body:not([data-frame-style=classic]) .settings-tabs{position:sticky;top:-28px;z-index:2;background:#15101ef5;padding-top:10px;backdrop-filter:blur(12px)}
+body[data-frame-style=glass] .shortcut,body[data-frame-style=glass] .notes-card,body[data-frame-style=glass] .search{backdrop-filter:blur(22px);border-radius:14px;background:rgba(var(--rgb),.06)}
+body[data-interface-font=mono]{font-family:Consolas,'Cascadia Mono',monospace}
+body[data-interface-font=rounded]{font-family:'Trebuchet MS',Verdana,sans-serif}
+body[data-ambient=orbit]::before{background:radial-gradient(ellipse at 50% 95%,rgba(var(--rgb),.2),transparent 65%),linear-gradient(180deg,#0c0c1300,#0c0c13b0)}
+body.motion[data-ambient=orbit]::before{animation:veyrion-ambient 16s ease-in-out infinite alternate}
+@keyframes veyrion-ambient{to{opacity:.4;transform:scale(1.07)}}
+@media(max-width:850px){body:not([data-frame-style=classic]) .workspace{grid-template-columns:1fr}body:not([data-frame-style=classic]) .hero{margin-top:8vh}}
+@media(prefers-reduced-motion:reduce){body::before{animation:none!important}.shortcut{transition:none!important}}

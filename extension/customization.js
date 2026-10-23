@@ -1,6 +1,6 @@
 import { preferences, updatePreferences } from './app.js'
 import { defaults } from './model.js'
-const keys = ['accent', 'ambient', 'motion', 'customColor', 'useCustomColor', 'brightness', 'blur', 'density', 'effect', 'sounds', 'soundPack', 'volume', 'music', 'showNotes', 'showClock', 'showSidebar', 'syncNativeTheme']
+const keys = ['accent', 'ambient', 'motion', 'customColor', 'useCustomColor', 'brightness', 'blur', 'density', 'effect', 'sounds', 'soundPack', 'volume', 'music', 'showNotes', 'showClock', 'showSidebar', 'syncNativeTheme', 'frameStyle', 'tileSize', 'interfaceFont', 'panelOpacity', 'webEffect', 'webSounds']
 const nativeColorButton = document.querySelector('#apply-browser-color')
 const nativeColorStatus = document.querySelector('#browser-color-status')
 nativeColorButton.disabled = !globalThis.chrome?.braveTheme?.setVeyrionColor
@@ -118,3 +118,23 @@ document.addEventListener('veyrion-settings', () => { stopMusic(); syncAudio() }
 document.addEventListener('visibilitychange', syncAudio)
 window.addEventListener('pagehide', stopMusic)
 document.body.dataset.customizationReady = 'true'
+
+const panelForm = document.querySelector('#panel-form')
+panelForm.addEventListener('submit', event => {
+  event.preventDefault()
+  const input = document.querySelector('#panel-url')
+  let url
+  try { url = new URL(input.value.includes('://') ? input.value : 'https://' + input.value) } catch {}
+  const status = document.querySelector('#panel-status')
+  if (!url || !['http:', 'https:'].includes(url.protocol) || url.username || url.password) { status.textContent = 'Introduce una dirección HTTP o HTTPS válida.'; return }
+  if (!chrome?.braveTheme?.setVeyrionPanel) { status.textContent = 'Disponible en Veyrion 0.3.0.'; return }
+  chrome.braveTheme.setVeyrionPanel('add', url.href, Number(document.querySelector('#panel-width').value), document.querySelector('#panel-mobile').checked, () => {
+    status.textContent = chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Página agregada. Ábrela desde su icono en la barra izquierda.'
+  })
+})
+document.querySelector('#panel-width').addEventListener('change', event => {
+  if (!globalThis.chrome?.braveTheme?.setVeyrionPanel) return
+  chrome.braveTheme.setVeyrionPanel('resize', 'https://example.com/', Number(event.target.value), false, () => {
+    document.querySelector('#panel-status').textContent = chrome.runtime.lastError ? chrome.runtime.lastError.message : `Ancho guardado: ${event.target.value} px.`
+  })
+})

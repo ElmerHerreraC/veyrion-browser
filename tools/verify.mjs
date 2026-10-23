@@ -9,6 +9,7 @@ const profile = path.join(root, '.verify-profile', String(Date.now()))
 const executable = braveExecutable()
 const native = process.env.VEYRION_NATIVE_VERIFY === '1' || path.basename(executable).toLowerCase() === 'veyrion.exe'
 const testExtensions = process.env.VEYRION_TEST_EXTENSIONS === '1'
+const releaseVersion = JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).version
 const loadExtensions = [...(!native ? [path.join(root, 'extension')] : []), ...(testExtensions ? [path.join(root, 'tests/fixture-extension')] : [])]
 await fs.mkdir(profile, { recursive: true })
 await fs.mkdir(path.join(root, 'artifacts'), { recursive: true })
@@ -27,7 +28,7 @@ const testServer = createServer((request, response) => {
     response.end('document.body.dataset.executed="yes"')
   } else {
     response.writeHead(200, { 'content-type': 'text/html', 'content-security-policy': "default-src 'self'; script-src 'self'" })
-    response.end('<!doctype html><title>Veyrion navigation check</title><body>Navigation works<script src="/check.js"></script>')
+    response.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veyrion navigation check</title><body>Navigation works<script src="/check.js"></script>')
   }
 })
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -70,6 +71,7 @@ try {
   }
   assert.ok(ready, 'La extensión debe reemplazar la nueva pestaña y cargar sus módulos')
   if (native) {
+    assert.equal(await evaluate('fetch(new URL("update-config.json",location.href)).then(response=>response.json()).then(config=>config.version)'),releaseVersion,'El binario debe incorporar los recursos de la versión actual')
     const automatic = await evaluate(`new Promise(resolve => chrome.alarms.get('veyrion-updates', alarm => resolve(alarm?.periodInMinutes)))`)
     assert.equal(automatic, 360, 'La comprobación automática debe estar programada cada seis horas')
     assert.ok(await evaluate('Boolean(globalThis.VeyrionUpdates?.verifyManifest)'), 'El inicio debe incluir verificación de firmas de actualización')
@@ -135,6 +137,57 @@ try {
   const screenshot = await cdp('Page.captureScreenshot', { format: 'png' })
   await fs.writeFile(path.join(root, 'artifacts/preview.png'), Buffer.from(screenshot.data, 'base64'))
   await new Promise(resolve => testServer.listen(0, '127.0.0.1', resolve))
+  let testedPanelUrl
+  if (native) {
+    testedPanelUrl = `http://127.0.0.1:${testServer.address().port}/panel-check`
+    const panelCall = (action, width, mobile) => evaluate(`new Promise((resolve,reject)=>chrome.braveTheme.setVeyrionPanel(${JSON.stringify(action)},${JSON.stringify(testedPanelUrl)},${width},${mobile},value=>chrome.runtime.lastError?reject(new Error(chrome.runtime.lastError.message)):resolve(value)))`)
+    const rejected = await evaluate(`new Promise(resolve=>chrome.braveTheme.setVeyrionPanel('add','javascript:alert(1)',360,false,()=>resolve(Boolean(chrome.runtime.lastError))))`)
+    assert.equal(rejected, true, 'Los paneles deben rechazar esquemas ejecutables')
+    await panelCall('add',360,true)
+    await panelCall('open',360,true)
+    let panelTarget
+    for (let i=0;i<100;i++) {
+      panelTarget=(await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(item=>item.type==='page' && item.url===testedPanelUrl)
+      if(panelTarget)break
+      await delay(100)
+    }
+    assert.ok(panelTarget,'Una página arbitraria debe abrirse en el panel nativo')
+    const panelSocket=new WebSocket(panelTarget.webSocketDebuggerUrl)
+    await new Promise((resolve,reject)=>{panelSocket.onopen=resolve;panelSocket.onerror=reject})
+    let panelSequence=0
+    const panelRequests=new Map()
+    panelSocket.onmessage=event=>{const message=JSON.parse(event.data);const resolve=panelRequests.get(message.id);if(resolve){panelRequests.delete(message.id);resolve(message)}}
+    const panelEvaluate=expression=>new Promise((resolve,reject)=>{
+      const id=++panelSequence
+      const timer=setTimeout(()=>{panelRequests.delete(id);reject(new Error('Panel runtime timeout'))},15000)
+      panelRequests.set(id,message=>{clearTimeout(timer);message.error||message.result?.exceptionDetails?reject(new Error(JSON.stringify(message))):resolve(message.result.result.value)})
+      panelSocket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))
+    })
+    try {
+      let mobile=false
+      for(let i=0;i<100;i++){
+        try{mobile=await panelEvaluate('/Mobile/.test(navigator.userAgent) && document.body?.dataset.executed === "yes"')}catch{}
+        if(mobile)break
+        await delay(100)
+      }
+      assert.ok(mobile,'La vista móvil debe enviar un agente móvil y cargar la página')
+      const narrow=await panelEvaluate('window.innerWidth')
+      assert.ok(narrow>=240 && narrow<=380,`Viewport móvil debe ajustarse al panel: ${narrow}`)
+      await panelCall('resize',520,true)
+      let wide=narrow
+      for(let i=0;i<50 && wide<=narrow+80;i++){await delay(100);wide=await panelEvaluate('window.innerWidth')}
+      assert.ok(wide>narrow+80,'El panel debe cambiar realmente su ancho')
+      await panelCall('mobile',520,false)
+      let desktop=false
+      for(let i=0;i<100;i++){try{desktop=await panelEvaluate('!/Mobile/.test(navigator.userAgent)')}catch{}if(desktop)break;await delay(100)}
+      assert.ok(desktop,'Debe poder volver a la vista de escritorio')
+      await panelCall('mobile',520,true)
+      await delay(200)
+    } finally {panelSocket.close();await panelCall('close',520,true)}
+    await evaluate(`import('./app.js').then(module=>module.updatePreferences({webEffect:'warm',frameStyle:'glass',tileSize:180,interfaceFont:'mono'}))`)
+    assert.equal(await evaluate('document.body.dataset.frameStyle'),'glass')
+    assert.equal(await evaluate('document.body.dataset.interfaceFont'),'mono')
+  }
   const navigation = await cdp('Page.navigate', { url: `http://127.0.0.1:${testServer.address().port}/` })
   assert.ok(!navigation.errorText, navigation.errorText)
   let executed = false
@@ -144,6 +197,11 @@ try {
     await delay(100)
   }
   assert.ok(executed, 'Debe navegar a una página y ejecutar su JavaScript')
+  if(native){
+    let filter=false
+    for(let i=0;i<50;i++){filter=await evaluate('document.documentElement.dataset.veyrionEffect === "warm"');if(filter)break;await delay(100)}
+    assert.ok(filter,'El filtro visual elegido debe aplicarse al navegar fuera del inicio')
+  }
   assert.equal(await evaluate('typeof require'), 'undefined')
   assert.equal(await evaluate('typeof process'), 'undefined')
   assert.equal(await evaluate('Boolean(globalThis.chrome?.storage)'), false)
@@ -164,6 +222,17 @@ try {
   }
   assert.ok(manager, 'Debe estar disponible el gestor nativo de extensiones')
   if (native) {
+    await cdp('Page.navigate',{url:'chrome://settings/help'})
+    let settingsReady=false
+    for(let i=0;i<100;i++){
+      try{settingsReady=await evaluate('Boolean(document.querySelector("settings-ui")?.shadowRoot)')}catch{}
+      if(settingsReady)break
+      await delay(100)
+    }
+    assert.ok(settingsReady,'Los ajustes deben cargar con los recursos nuevos')
+    await delay(500)
+    const settingsShot=await cdp('Page.captureScreenshot',{format:'png'})
+    await fs.writeFile(path.join(root,'artifacts/settings-030.png'),Buffer.from(settingsShot.data,'base64'))
     try { await cdp('Browser.close') } catch {}
     for (let i = 0; i < 100 && child.exitCode === null; i++) await delay(100)
     assert.notEqual(child.exitCode, null, 'El perfil de prueba debe cerrarse para comprobar las preferencias persistidas')
@@ -172,12 +241,16 @@ try {
     assert.equal(saved.brave?.sidebar?.sidebar_show_option, 0, 'La barra nativa debe permanecer visible al navegar')
     assert.equal(saved.veyrion?.desktop_layout_version, 1, 'La migración de interfaz debe persistirse una sola vez')
     const panelData = JSON.stringify(saved.brave?.sidebar?.sidebar_items)
+    assert.equal(saved.veyrion?.panel_width,520,'El ancho del panel debe persistir')
+    assert.equal(saved.veyrion?.mobile_panels?.[testedPanelUrl],true,'La vista móvil debe guardarse por dirección')
+    assert.ok(panelData.includes(testedPanelUrl),'La página personalizada debe guardarse en la barra')
     for (const host of ['web.whatsapp.com', 'web.telegram.org', 'discord.com', 'twitch.tv', 'open.spotify.com']) assert.ok(panelData.includes(host), 'Debe guardarse el panel de ' + host)
   }
   const report = { passed: true, browser: executable, extension_url: url, checks: [native ? 'Inicio integrado en binario propio sin extensión externa' : 'MV3 cargado en Brave', 'Nueva pestaña sustituida', 'Nombre Veyrion', 'Presets visuales y sonoros', 'Densidad y visibilidad', 'Importación de mod y validación de valores', 'Cambio de acento', 'Persistencia tras recarga', 'Añadir y quitar acceso', 'Navegación HTTP y JavaScript', 'APIs de extensión aisladas de páginas web', 'Gestor nativo de extensiones disponible'], native_build_verified: native }
   if (testExtensions) report.checks.push('Instalación y ejecución de extensión MV3 independiente sin permisos adicionales')
   if (native) report.checks.push('Color aplicado al tema nativo de pestañas y barra; valores fuera de rango rechazados')
   if (native) report.checks.push('Barra nativa izquierda persistente con paneles web; comprobación automática de actualizaciones cada seis horas')
+  if (native) report.checks.push('Página arbitraria en panel, ancho real y persistido, vista móvil/escritorio por página, filtros visuales fuera del inicio y estilo configurable')
   report.checks.push('Rechazo de certificado HTTPS no confiable')
   await fs.writeFile(path.join(root, 'artifacts/verification.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))

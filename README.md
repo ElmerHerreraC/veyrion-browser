@@ -4,16 +4,19 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
-La versión 0.2.0 terminó la compilación, las pruebas del navegador y la actualización de la instalación local en Windows x64. Se verificaron navegación, aislamiento de APIs, extensiones MV3, rechazo de certificados no confiables, tema nativo, barra izquierda y alarma de actualizaciones. Descarga los archivos publicados en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
+La versión 0.2.0 está publicada. La versión 0.3.0 amplía la personalización y los paneles; está en validación y solo debe instalarse cuando exista su Release con manifiesto firmado. Descarga las versiones verificadas en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
 
 ## Interfaz
 
 - Barra lateral nativa persistente: marcadores, historial y lista de lectura.
 - Paneles web para WhatsApp, Telegram, Discord, Twitch y Spotify, que se abren al seleccionarlos. Cada servicio mantiene sus propios requisitos de acceso y reproducción.
 - Color de acento sincronizado con pestañas y barra de herramientas; borde lateral sigue el tema.
+- El botón + acepta direcciones HTTP/HTTPS propias. El separador del panel permite arrastrar su ancho y guardarlo; el botón Celular / Escritorio guarda la vista por página. La vista móvil adapta el viewport y el agente de usuario, pero no convierte un sitio en una aplicación Android.
+- Logotipos propios en ajustes y avatares, menú con símbolo Veyrion, escudo de protección neutro y pestañas más angulares.
+- Inicio angular, cristal o clásico; tamaños de accesos, opacidad y tipografía configurables. Filtros cálido, nocturno y monocromo, y sonidos opcionales de clic y teclado para páginas web.
 - Inicio con fondos propios, luminosidad, desenfoque, efectos, sonidos, música ambiental, notas y ambientes importables/exportables.
 
-La apariencia está inspirada en Opera GX. No se distribuyen sus recursos propietarios ni se promete compatibilidad con sus paquetes de mods. Los efectos y sonidos actuales pertenecen al inicio; los paneles y el tema nativo permanecen al navegar.
+La apariencia está inspirada en Opera GX. No se distribuyen sus recursos propietarios ni se promete compatibilidad con sus paquetes de mods. Los filtros web y sonidos de interacción web también funcionan al navegar; los efectos de fondo y la música ambiental siguen perteneciendo al inicio. No incluye el motor de shaders de GX, su tienda de mods ni sonidos de controles nativos. Los paneles y el tema nativo permanecen al navegar.
 
 ## Actualizaciones
 
@@ -36,4 +39,3 @@ Se necesita Windows x64, Node 24, pnpm, Git, Visual Studio 2026 Build Tools con 
 La publicación del canal requiere la clave privada del editor. No crees una clave diferente para publicar actualizaciones destinadas a instalaciones existentes. Véase `docs/UPDATES.md`.
 
 El instalador crea accesos que abren directamente `veyrion.exe` con icono y perfil propios. No recurre al Brave instalado. Para fijar el icono permanentemente usa «Anclar a la barra de tareas».
-

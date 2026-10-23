@@ -21,3 +21,13 @@ test('Los mods limitan valores y no admiten CSS ni colores ejecutables', () => {
   assert.equal(state.customColor, '#a48bff'); assert.equal(state.effect, 'none')
   assert.equal(state.volume, 100); assert.equal(state.blur, 0); assert.equal(state.brightness, 70)
 })
+
+test('La apariencia ampliada usa listas de valores y límites seguros', () => {
+  const valid = normalize({frameStyle:'glass',tileSize:180,interfaceFont:'mono',panelOpacity:60,webEffect:'warm',webSounds:true})
+  assert.equal(valid.frameStyle,'glass'); assert.equal(valid.tileSize,180)
+  assert.equal(valid.interfaceFont,'mono'); assert.equal(valid.webEffect,'warm'); assert.equal(valid.webSounds,true)
+  const invalid = normalize({frameStyle:'<script>',tileSize:999,interfaceFont:'url(x)',panelOpacity:-10,webEffect:'url(https://tracker.test)',webSounds:'true'})
+  assert.equal(invalid.frameStyle,'angular'); assert.equal(invalid.tileSize,210)
+  assert.equal(invalid.interfaceFont,'system'); assert.equal(invalid.panelOpacity,35)
+  assert.equal(invalid.webEffect,'none'); assert.equal(invalid.webSounds,false)
+})
