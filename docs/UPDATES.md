@@ -9,8 +9,11 @@ Repositorio del canal: ElmerHerreraC/veyrion-browser.
 5. Subir exactamente el instalador validado, Veyrion-Setup-x64.exe.sha256 y veyrion-update.json de esa misma ejecución. Mantener los nombres de archivo.
 6. Publicar la Release como versión más reciente. El cliente comprobará la firma, el repositorio, la versión, la URL del instalador y su SHA256 antes de ofrecer una descarga.
 
-La consulta automática ocurre al iniciar y cada seis horas. También se puede solicitar desde Personalizar → Actualizar. No hay instalación silenciosa: el usuario guarda la descarga verificada y ejecuta el instalador. Los sitios y extensiones ajenos no tienen acceso a la clave de publicación.
+La consulta automática ocurre al iniciar y cada seis horas. También se puede solicitar desde Configuración rápida → Actualizar. No hay instalación silenciosa: el usuario guarda la descarga verificada y ejecuta el instalador. Los sitios y extensiones ajenos no tienen acceso a la clave de publicación.
 
 Si se pierde la clave privada, será necesario un plan de rotación y distribuir una versión que incorpore la nueva clave por un canal de confianza. No regenerar la clave automáticamente.
 
 La firma RSA del manifiesto verifica al editor para Veyrion. Windows SmartScreen y los antivirus aplican sus propias políticas; esta firma no sustituye Authenticode.
+
+Después de publicar, ejecuta node tools/verify-release.mjs para contrastar la firma y el SHA-256 del archivo público con el instalador local.
+

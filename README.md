@@ -4,7 +4,7 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
-La versión 0.2.0 está publicada. La versión 0.3.0 amplía la personalización y los paneles; está en validación y solo debe instalarse cuando exista su Release con manifiesto firmado. Descarga las versiones verificadas en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
+La versión 0.3.0 terminó la compilación, las pruebas del navegador, la prueba de una extensión MV3 independiente y la actualización de la instalación local en Windows x64. Se comprobaron paneles con direcciones personalizadas, ancho real y persistido, vista móvil/escritorio, filtros fuera del inicio, identidad de la cabecera de ajustes en modo oscuro y rechazo de certificados no confiables. Descarga las versiones verificadas en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
 
 ## Interfaz
 
@@ -20,7 +20,7 @@ La apariencia está inspirada en Opera GX. No se distribuyen sus recursos propie
 
 ## Actualizaciones
 
-El componente interno consulta cada seis horas el canal público de GitHub Releases. Comprueba una firma RSA-SHA256 con clave pública incorporada y la huella SHA-256 y el tamaño del instalador. La descarga verificada se ofrece en Personalizar → Actualizar. El usuario ejecuta el instalador para completar la actualización conservando su perfil. No se instalan versiones inferiores ni se envían perfiles o historial a GitHub.
+El componente interno consulta cada seis horas el canal público de GitHub Releases. Comprueba una firma RSA-SHA256 con clave pública incorporada y la huella SHA-256 y el tamaño del instalador. La descarga verificada se ofrece en Configuración rápida → Actualizar. El usuario ejecuta el instalador para completar la actualización conservando su perfil. No se instalan versiones inferiores ni se envían perfiles o historial a GitHub.
 
 Los instaladores y `veyrion-update.json` se publican juntos en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases). La firma del canal de actualizaciones no equivale a una firma Authenticode de Windows.
 
@@ -39,3 +39,4 @@ Se necesita Windows x64, Node 24, pnpm, Git, Visual Studio 2026 Build Tools con 
 La publicación del canal requiere la clave privada del editor. No crees una clave diferente para publicar actualizaciones destinadas a instalaciones existentes. Véase `docs/UPDATES.md`.
 
 El instalador crea accesos que abren directamente `veyrion.exe` con icono y perfil propios. No recurre al Brave instalado. Para fijar el icono permanentemente usa «Anclar a la barra de tareas».
+
