@@ -234,7 +234,15 @@ try {
       await delay(100)
     }
     assert.ok(settingsReady,'Los ajustes deben cargar con los recursos nuevos')
-    await delay(500)
+    let ownHeader=false
+    for(let i=0;i<50;i++){
+      ownHeader=await evaluate('Boolean(document.querySelector("settings-ui")?.shadowRoot?.querySelector("cr-toolbar img[slot=product-logo][alt=Veyrion]")?.naturalWidth)')
+      if(ownHeader)break
+      await delay(100)
+    }
+    assert.ok(ownHeader,'La cabecera de ajustes debe usar el logo propio también en modo oscuro')
+    assert.ok(await evaluate(`(() => {const texts=[];const scan=root=>{texts.push(root.textContent||'');for(const element of root.querySelectorAll('*'))if(element.shadowRoot)scan(element.shadowRoot)};scan(document);return texts.some(text=>text.includes('Acerca de Veyrion')||text.includes('About Veyrion'))})()`),'Los ajustes deben identificar el producto como Veyrion')
+    await delay(300)
     const settingsShot=await cdp('Page.captureScreenshot',{format:'png'})
     await fs.writeFile(path.join(root,'artifacts/settings-030.png'),Buffer.from(settingsShot.data,'base64'))
     try { await cdp('Browser.close') } catch {}

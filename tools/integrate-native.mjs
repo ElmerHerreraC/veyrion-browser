@@ -5,6 +5,7 @@ import { integrateNativeTheme } from './integrate-native-theme.mjs'
 import { integrateNativeSidebar } from './integrate-native-sidebar.mjs'
 import { integrateNativePanels } from './integrate-native-panels.mjs'
 import { integratePanelApi } from './integrate-panel-api.mjs'
+import { integrateSettingsBranding } from './integrate-settings-branding.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
 const component = path.join(source, 'components/brave_extension/extension')
 const destination = path.join(component, 'brave_extension/veyrion_start')
@@ -46,4 +47,6 @@ integrateNativeTheme(source)
 integrateNativeSidebar(source)
 integrateNativePanels(source)
 integratePanelApi(source)
+integrateSettingsBranding(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')
+
