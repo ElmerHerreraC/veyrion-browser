@@ -25,4 +25,3 @@ assert.equal(Number(download.headers.get('content-length')),installer.size)
 const report={passed:true,version:config.version,signatureVerified:true,publicDigestVerified:true,installerAvailable:true,installerSize:installer.size,verifiedAt:new Date().toISOString()}
 await fs.writeFile(path.join(root,'artifacts/github-release-verification.json'),JSON.stringify(report,null,2)+'\n')
 console.log(JSON.stringify(report))
-

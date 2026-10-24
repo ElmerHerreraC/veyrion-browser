@@ -51,4 +51,3 @@ export function integrateSettingsBranding(source) {
   html_source->AddString("aboutProductLogoAlt", "Veyrion");`))
   console.log('Marca propia en cabecera oscura, etiquetas y ayuda de ajustes.')
 }
-

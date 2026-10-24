@@ -16,4 +16,3 @@ Si se pierde la clave privada, será necesario un plan de rotación y distribuir
 La firma RSA del manifiesto verifica al editor para Veyrion. Windows SmartScreen y los antivirus aplican sus propias políticas; esta firma no sustituye Authenticode.
 
 Después de publicar, ejecuta node tools/verify-release.mjs para contrastar la firma y el SHA-256 del archivo público con el instalador local.
-

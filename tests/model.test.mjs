@@ -1,6 +1,17 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { destination, safeUrl, normalize } from '../extension/model.js'
+
+test('La apariencia unificada valida modos e iconos de perfiles antiguos', () => {
+  const legacy = normalize({ accent: 'cyan' })
+  assert.equal(legacy.themeMode, 'dark')
+  assert.equal(legacy.sidebarIconSize, 20)
+  const invalid = normalize({ themeMode:'invalid', sidebarIconSize:999, sidebarSpacing:-3, sidebarColoredIcons:'false', wallpaperPreset:'url(x)' })
+  assert.equal(invalid.themeMode,'dark')
+  assert.equal(invalid.sidebarIconSize,26)
+  assert.equal(invalid.sidebarSpacing,0)
+  assert.equal(invalid.wallpaperPreset,'waves')
+})
 test('La búsqueda codifica entradas y las direcciones conservan HTTP/HTTPS', () => {
   assert.equal(destination('brave.com'), 'https://brave.com/')
   assert.equal(destination('https://example.com/a?q=2'), 'https://example.com/a?q=2')

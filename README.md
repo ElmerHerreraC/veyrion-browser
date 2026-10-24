@@ -4,11 +4,13 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
-La versión 0.3.0 terminó la compilación, las pruebas del navegador, la prueba de una extensión MV3 independiente y la actualización de la instalación local en Windows x64. Se comprobaron paneles con direcciones personalizadas, ancho real y persistido, vista móvil/escritorio, filtros fuera del inicio, identidad de la cabecera de ajustes en modo oscuro y rechazo de certificados no confiables. Descarga las versiones verificadas en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
+La versión 0.4.0 terminó la compilación, las pruebas funcionales y de extensiones MV3, y la actualización de la instalación local en Windows x64. Se comprobaron la personalización nativa, la persistencia del tema al recargar, diez ciclos de paneles con salida limpia, el centrado en pantallas anchas y la configuración del sistema sin la promoción de Brave Origin. Descarga el instalador en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
 
 ## Interfaz
 
-- Barra lateral nativa persistente: marcadores, historial y lista de lectura.
+- Barra lateral nativa persistente, con la lista de lectura retirada de los accesos en 0.4.0.
+- En 0.4.0, `chrome://settings/appearance` contiene los temas y controles de modo claro/automático/oscuro, color de acento, tamaño, separación, visibilidad, símbolos y orden de iconos. Se guardan como preferencias nativas del perfil y se aplican fuera de la nueva pestaña.
+- Se retiran la franja de atribución «Personalizar Brave», la promoción de Brave Origin y el acceso lateral de Brave Talk. La nueva pestaña se centra también en monitores anchos.
 - Paneles web para WhatsApp, Telegram, Discord, Twitch y Spotify, que se abren al seleccionarlos. Cada servicio mantiene sus propios requisitos de acceso y reproducción.
 - Color de acento sincronizado con pestañas y barra de herramientas; borde lateral sigue el tema.
 - El botón + acepta direcciones HTTP/HTTPS propias. El separador del panel permite arrastrar su ancho y guardarlo; el botón Celular / Escritorio guarda la vista por página. La vista móvil adapta el viewport y el agente de usuario, pero no convierte un sitio en una aplicación Android.

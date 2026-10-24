@@ -2,6 +2,7 @@ import { defaults, engines, destination, safeUrl, normalize } from './model.js'
 const $ = (selector) => document.querySelector(selector)
 const extension = Boolean(globalThis.chrome?.storage?.local)
 let state = normalize()
+let appearanceRevision = 0, lastAppearanceEdit = 0
 let saveQueue = Promise.resolve()
 function readExtensionState() {
   return new Promise((resolve, reject) => chrome.storage.local.get('nebula', data => {
@@ -37,6 +38,8 @@ function apply() {
   document.body.dataset.ambient = state.ambient
   document.body.dataset.density = state.density
   document.body.dataset.effect = state.effect
+  document.documentElement.dataset.mode = state.themeMode === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : state.themeMode
+  document.body.dataset.wallpaperPreset = state.wallpaperEnabled ? state.wallpaperPreset : 'none'
   document.body.dataset.frameStyle = state.frameStyle
   document.body.dataset.interfaceFont = state.interfaceFont
   document.documentElement.style.setProperty('--tile-size', `${state.tileSize}px`)
@@ -47,7 +50,7 @@ function apply() {
   document.documentElement.style.setProperty('--wallpaper-dim', String(1 - state.brightness / 100))
   document.documentElement.style.setProperty('--wallpaper-blur', `${state.blur}px`)
   document.body.classList.toggle('motion', state.motion)
-  document.documentElement.style.setProperty('--wallpaper', state.wallpaper ? `url("${state.wallpaper}")` : 'none')
+  document.documentElement.style.setProperty('--wallpaper', state.wallpaperEnabled && state.wallpaper ? `url("${state.wallpaper}")` : 'none')
   $('#engine').value = state.engine
   $('#ambient').value = state.ambient
   $('#motion').checked = state.motion
@@ -90,7 +93,7 @@ for (const property of ['engine', 'ambient', 'motion']) $(`#${property}`).addEve
   state[property] = property === 'motion' ? event.target.checked : event.target.value
   apply(); save().catch(() => {})
 })
-document.querySelectorAll('[data-accent]').forEach(button => button.addEventListener('click', () => { state.accent = button.dataset.accent; state.useCustomColor = false; apply(); save().catch(() => {}) }))
+document.querySelectorAll('[data-accent]').forEach(button => button.addEventListener('click', () => { appearanceRevision++; lastAppearanceEdit=Date.now(); state.accent = button.dataset.accent; state.useCustomColor = false; apply(); document.dispatchEvent(new Event('veyrion-settings')); save().catch(() => {}) }))
 document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', async () => {
   const url = `brave://${button.dataset.page}/`
   if (extension) {
@@ -128,10 +131,34 @@ try {
   const data = extension ? await readExtensionState() : JSON.parse(localStorage.getItem('nebula') || 'null')
   state = normalize(data || defaults)
 } catch { toast('No se pudieron cargar tus preferencias.') }
+async function readNativeAppearance(initial = false) {
+  if (!globalThis.chrome?.braveTheme?.getVeyrionChrome || (!initial && Date.now()-lastAppearanceEdit<1000)) return false
+  const revision = appearanceRevision
+  const native = await new Promise(resolve => chrome.braveTheme.getVeyrionChrome(json => {
+    if (chrome.runtime.lastError) resolve(null)
+    else { try { resolve(JSON.parse(json)) } catch { resolve(null) } }
+  }))
+  if (native?.initialized && revision===appearanceRevision) {
+    const previous = JSON.stringify(state)
+    const hex = '#'+native.color.toString(16).padStart(6,'0')
+    const named = Object.entries(colors).find(([,value])=>value[0].toLowerCase()===hex)
+    state = normalize({...state, themeMode:native.mode, sidebarIconSize:native.size,
+      sidebarSpacing:native.spacing, sidebarColoredIcons:native.colored, useCustomColor:!named,
+      accent:named?.[0] || state.accent, customColor:hex})
+    return JSON.stringify(state)!==previous
+  }
+  return false
+}
+await readNativeAppearance(true)
+globalThis.chrome?.runtime?.onMessage?.addListener(message=>{
+  if(message?.type==='veyrion-appearance-applied')readNativeAppearance(true).then(changed=>{if(changed)apply()})
+})
+window.addEventListener('focus',()=>setTimeout(()=>readNativeAppearance().then(changed=>{if(changed)apply()}),100))
 apply(); renderLinks(); $('#notes').value = state.notes; clock(); setInterval(clock, 30000)
 document.body.dataset.ready = 'true'
 export function preferences() { return structuredClone(state) }
 export function updatePreferences(patch) {
+  appearanceRevision++; lastAppearanceEdit=Date.now()
   state = normalize({ ...state, ...patch })
   apply()
   document.dispatchEvent(new Event('veyrion-settings'))

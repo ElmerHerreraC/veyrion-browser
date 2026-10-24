@@ -14,9 +14,9 @@ const loadExtensions = [...(!native ? [path.join(root, 'extension')] : []), ...(
 await fs.mkdir(profile, { recursive: true })
 await fs.mkdir(path.join(root, 'artifacts'), { recursive: true })
 const child = spawn(executable, [
-  '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
+  ...(process.env.VEYRION_WINDOWED_VERIFY === '1' ? ['--window-size=1500,1000'] : ['--headless=new']), '--remote-debugging-port=0', `--user-data-dir=${profile}`,
   ...(loadExtensions.length ? [`--load-extension=${loadExtensions.join(',')}`] : []), '--no-first-run', '--no-default-browser-check', 'brave://newtab/'
-], { stdio: ['ignore','ignore','pipe'], windowsHide: true })
+], { stdio: ['ignore','ignore','pipe'], windowsHide: process.env.VEYRION_WINDOWED_VERIFY !== '1' })
 child.stderr.on('data', data => { fs.appendFile(path.join(root,'artifacts/native-runtime-stderr.log'),data).catch(()=>{}) })
 child.on('exit', (code,signal) => { if(process.env.VEYRION_VERIFY_TRACE==='1') console.log('BROWSER EXIT',code,signal) })
 child.on('error', error => console.error(error.message))
@@ -30,7 +30,7 @@ const testServer = createServer((request, response) => {
     response.end('document.body.dataset.executed="yes"')
   } else {
     response.writeHead(200, { 'content-type': 'text/html', 'content-security-policy': "default-src 'self'; script-src 'self'" })
-    response.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veyrion navigation check</title><body>Navigation works<script src="/check.js"></script>')
+    response.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veyrion navigation check</title><body>Navigation works<p><label>Entrada de prueba <input id="test-input" placeholder="Prueba de foco del panel"></label></p><script src="/check.js"></script>')
   }
 })
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -65,15 +65,28 @@ try {
     if (request) { pending.delete(result.id); result.error ? request.reject(new Error(JSON.stringify(result.error))) : request.resolve(result.result) }
   }
   await cdp('Page.enable')
-  await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
+  if(process.env.VEYRION_WINDOWED_VERIFY==='1')await cdp('Page.bringToFront')
+  if(process.env.VEYRION_WINDOWED_VERIFY!=='1')await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
   let ready = false
   for (let i = 0; i < 100; i++) {
-    ready = await evaluate('document.body?.dataset.ready === "true"')
+    ready = await evaluate('document.body?.dataset.ready === "true" && document.body?.dataset.customizationReady === "true" && document.body?.dataset.unifiedReady === "true"')
     if (ready) break
     await delay(100)
   }
   assert.ok(ready, 'La extensión debe reemplazar la nueva pestaña y cargar sus módulos')
+  for(const width of (process.env.VEYRION_WINDOWED_VERIFY==='1'?[null]:[1920,1440])){
+    if(width)await cdp('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false})
+    const alignment=await evaluate(`(()=>{const rect=document.querySelector('main').getBoundingClientRect();return Math.abs(rect.x+rect.width/2-innerWidth/2)})()`)
+    assert.ok(alignment<2,'El contenido debe estar centrado también en pantallas anchas')
+  }
   if (native) {
+    let initialized=false
+    for(let i=0;i<100;i++){
+      initialized=await evaluate(`new Promise(resolve=>chrome.braveTheme.getVeyrionChrome(json=>resolve(JSON.parse(json).initialized)))`)
+      if(initialized)break
+      await delay(100)
+    }
+    assert.ok(initialized,'La inicialización de apariencia debe completarse antes de cambiar ajustes')
     assert.equal(await evaluate('fetch(new URL("update-config.json",location.href)).then(response=>response.json()).then(config=>config.version)'),releaseVersion,'El binario debe incorporar los recursos de la versión actual')
     const automatic = await evaluate(`new Promise(resolve => chrome.alarms.get('veyrion-updates', alarm => resolve(alarm?.periodInMinutes)))`)
     assert.equal(automatic, 360, 'La comprobación automática debe estar programada cada seis horas')
@@ -83,6 +96,23 @@ try {
     assert.equal(color, 0x69e9e0, 'El color debe aplicarse al servicio nativo de temas')
     const invalid = await evaluate(`new Promise(resolve => chrome.braveTheme.setVeyrionColor(-1,256,0, () => resolve(Boolean(chrome.runtime.lastError))))`)
     assert.equal(invalid, true, 'El puente nativo debe rechazar colores fuera de rango')
+    for (const mode of ['light','system','dark']) {
+      await evaluate(`new Promise((resolve,reject)=>chrome.braveTheme.setVeyrionChrome('${mode}',22,4,false,()=>chrome.runtime.lastError?reject(new Error(chrome.runtime.lastError.message)):resolve()))`)
+      const appearance = JSON.parse(await evaluate(`new Promise(resolve=>chrome.braveTheme.getVeyrionChrome(resolve))`))
+      assert.equal(appearance.mode,mode)
+      assert.equal(appearance.size,22)
+      assert.ok(!appearance.items.some(item=>item.id==='builtin:4'),'La lista de lectura no debe aparecer en la barra')
+      assert.ok(!appearance.items.some(item=>item.id==='builtin:1'),'La barra no debe imponer el servicio de llamadas de Brave')
+    }
+    const appearance = JSON.parse(await evaluate(`new Promise(resolve=>chrome.braveTheme.getVeyrionChrome(resolve))`))
+    const item = appearance.items[0]
+    assert.ok(item,'La barra debe contener iconos configurables')
+    for(const [action,value] of [['hide',''],['icon','star'],['show',''],['icon','default']]) {
+      await evaluate(`new Promise((resolve,reject)=>chrome.braveTheme.manageVeyrionIcon('${action}',${item.index},'${value}',()=>chrome.runtime.lastError?reject(new Error(chrome.runtime.lastError.message)):resolve()))`)
+      const updated=JSON.parse(await evaluate(`new Promise(resolve=>chrome.braveTheme.getVeyrionChrome(resolve))`)).items.find(icon=>icon.id===item.id)
+      if(action==='hide'||action==='show')assert.equal(updated.visible,action==='show')
+      else assert.equal(updated.icon,value)
+    }
   }
   if (testExtensions) {
     let worker
@@ -112,7 +142,9 @@ try {
   await evaluate('document.querySelector("#customize").click(); document.querySelector("[data-panel=mods]").click(); document.querySelector("[data-preset=terminal]").click()')
   assert.equal(await evaluate('document.body.dataset.effect'), 'scanlines')
   assert.equal(await evaluate('document.querySelector("[data-setting=soundPack]").value'), 'arcade')
+  if(process.env.VEYRION_VERIFY_TRACE==='1')console.log('NOTES BEFORE',await evaluate(`(()=>{window.noteEvents=[];const input=document.querySelector('[data-setting=showNotes]');for(const type of ['click','input','change'])input.addEventListener(type,event=>window.noteEvents.push({type,checked:input.checked,prevented:event.defaultPrevented}),true);return {checked:input.checked,disabled:input.disabled,open:document.querySelector('#settings-dialog').open}})()`))
   await evaluate('document.querySelector("[data-panel=layout]").click(); document.querySelector("[data-setting=showNotes]").click()')
+  if(process.env.VEYRION_VERIFY_TRACE==='1')console.log('NOTES DEBUG',await evaluate(`import('./app.js').then(m=>({checked:document.querySelector('[data-setting=showNotes]').checked,preference:m.preferences().showNotes,hidden:document.querySelector('.notes-card').hidden,unified:document.body.dataset.unifiedReady,events:window.noteEvents}))`))
   assert.equal(await evaluate('document.querySelector(".notes-card").hidden'), true)
   await evaluate('document.querySelector("[data-setting=showNotes]").click(); document.querySelector("[data-setting=density]").value="compact"; document.querySelector("[data-setting=density]").dispatchEvent(new Event("change"))')
   assert.equal(await evaluate('document.body.dataset.density'), 'compact')
@@ -128,9 +160,19 @@ try {
   assert.equal(await evaluate('document.querySelector("[data-accent=cyan]").getAttribute("aria-pressed")'), 'true')
   await evaluate('document.querySelector("#settings-dialog").close(); document.querySelector("#notes").value="Prueba de persistencia"; document.querySelector("#notes").dispatchEvent(new Event("input"))')
   await delay(650)
+  if(process.env.VEYRION_VERIFY_TRACE==='1')console.log('COLOR BEFORE RELOAD',await evaluate(`Promise.all([import('./app.js').then(m=>({accent:m.preferences().accent,custom:m.preferences().useCustomColor,hex:m.preferences().customColor})),new Promise(resolve=>chrome.braveTheme.getVeyrionChrome(resolve))])`))
+  const previousDocument=await evaluate('performance.timeOrigin')
   await cdp('Page.reload')
-  await delay(650)
+  for(let i=0;i<100;i++){
+    try{if(await evaluate(`performance.timeOrigin !== ${previousDocument} && document.body?.dataset.ready === "true" && document.body?.dataset.customizationReady === "true" && document.body?.dataset.unifiedReady === "true"`))break}catch{}
+    await delay(100)
+  }
+  if(process.env.VEYRION_VERIFY_TRACE==='1')console.log('COLOR AFTER RELOAD',await evaluate(`Promise.all([import('./app.js').then(m=>({accent:m.preferences().accent,custom:m.preferences().useCustomColor,hex:m.preferences().customColor})),new Promise(resolve=>chrome.braveTheme.getVeyrionChrome(resolve))])`))
   assert.equal(await evaluate('document.querySelector("#notes").value'), 'Prueba de persistencia')
+  for(let i=0;i<100;i++){
+    if(await evaluate('document.querySelector("[data-accent=cyan]").getAttribute("aria-pressed") === "true"'))break
+    await delay(100)
+  }
   assert.equal(await evaluate('document.querySelector("[data-accent=cyan]").getAttribute("aria-pressed")'), 'true')
   await evaluate('document.querySelector("#add-link").click(); document.querySelector("#link-title").value="Ejemplo"; document.querySelector("#link-url").value="https://example.com/"; document.querySelector("#link-form").requestSubmit()')
   assert.equal(await evaluate('document.querySelectorAll(".shortcut").length'), 5)
@@ -148,6 +190,10 @@ try {
     assert.equal(rejected, true, 'Los paneles deben rechazar esquemas ejecutables')
     await panelCall('add',360,true)
     await panelCall('open',360,true)
+    if(process.env.VEYRION_WINDOWED_VERIFY==='1'){
+      await cdp('Page.bringToFront')
+      await cdp('Page.captureScreenshot',{format:'png'})
+    }
     let panelTarget
     for (let i=0;i<100;i++) {
       panelTarget=(await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(item=>item.type==='page' && item.url===testedPanelUrl)
@@ -161,12 +207,14 @@ try {
     let panelSequence=0
     const panelRequests=new Map()
     panelSocket.onmessage=event=>{const message=JSON.parse(event.data);const resolve=panelRequests.get(message.id);if(resolve){panelRequests.delete(message.id);resolve(message)}}
-    const panelEvaluate=expression=>new Promise((resolve,reject)=>{
+    const panelCdp=(method,params={})=>new Promise((resolve,reject)=>{
       const id=++panelSequence
       const timer=setTimeout(()=>{panelRequests.delete(id);reject(new Error('Panel runtime timeout'))},15000)
-      panelRequests.set(id,message=>{clearTimeout(timer);message.error||message.result?.exceptionDetails?reject(new Error(JSON.stringify(message))):resolve(message.result.result.value)})
-      panelSocket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))
+      panelRequests.set(id,message=>{clearTimeout(timer);message.error||message.result?.exceptionDetails?reject(new Error(JSON.stringify(message))):resolve(message.result)})
+      panelSocket.send(JSON.stringify({id,method,params}))
     })
+    const panelEvaluate=async expression=>(await panelCdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true})).result.value
+    const panelPixelWidth=async()=>Buffer.from((await panelCdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data,'base64').readUInt32BE(16)
     try {
       let mobile=false
       for(let i=0;i<100;i++){
@@ -175,19 +223,38 @@ try {
         await delay(100)
       }
       assert.ok(mobile,'La vista móvil debe enviar un agente móvil y cargar la página')
-      const narrow=await panelEvaluate('window.innerWidth')
+      if(process.env.VEYRION_WINDOWED_VERIFY==='1')await new Promise((resolve,reject)=>{
+        const id=++panelSequence
+        const timer=setTimeout(()=>{panelRequests.delete(id);reject(new Error('Panel activation timeout'))},15000)
+        panelRequests.set(id,message=>{clearTimeout(timer);message.error?reject(new Error(JSON.stringify(message.error))):resolve()})
+        panelSocket.send(JSON.stringify({id,method:'Page.bringToFront'}))
+      })
+      await panelEvaluate('document.body.tabIndex=0;document.body.focus();true')
+      if(process.env.VEYRION_GUI_HOLD==='1'){
+        console.log('GUI PANEL READY: comprobar foco real y enviar Enter para continuar')
+        await new Promise(resolve=>process.stdin.once('data',resolve))
+      }
+      let narrow=await panelEvaluate('window.innerWidth')
+      for(let i=0;i<100&&(narrow<240||narrow>380);i++){await delay(100);narrow=await panelEvaluate('window.innerWidth')}
       assert.ok(narrow>=240 && narrow<=380,`Viewport móvil debe ajustarse al panel: ${narrow}`)
+      const narrowPixels=await panelPixelWidth()
       await panelCall('resize',520,true)
-      let wide=narrow
-      for(let i=0;i<50 && wide<=narrow+80;i++){await delay(100);wide=await panelEvaluate('window.innerWidth')}
-      assert.ok(wide>narrow+80,'El panel debe cambiar realmente su ancho')
+      let widePixels=narrowPixels
+      for(let i=0;i<50 && widePixels<=narrowPixels*1.2;i++){await delay(100);widePixels=await panelPixelWidth()}
+      assert.ok(widePixels>narrowPixels*1.2,`La superficie visible del panel debe ensancharse: ${narrowPixels} → ${widePixels} píxeles`)
       await panelCall('mobile',520,false)
       let desktop=false
       for(let i=0;i<100;i++){try{desktop=await panelEvaluate('!/Mobile/.test(navigator.userAgent)')}catch{}if(desktop)break;await delay(100)}
       assert.ok(desktop,'Debe poder volver a la vista de escritorio')
       await panelCall('mobile',520,true)
       await delay(200)
+      await panelEvaluate('window.focus(); document.body.tabIndex=0; document.body.focus(); true')
     } finally {panelSocket.close();await panelCall('close',520,true)}
+    for(let cycle=0;cycle<10;cycle++){
+      await panelCall('open',520,true)
+      await delay(80)
+      await panelCall('close',520,true)
+    }
     await evaluate(`import('./app.js').then(module=>module.updatePreferences({webEffect:'warm',frameStyle:'glass',tileSize:180,interfaceFont:'mono'}))`)
     assert.equal(await evaluate('document.body.dataset.frameStyle'),'glass')
     assert.equal(await evaluate('document.body.dataset.interfaceFont'),'mono')
@@ -245,9 +312,42 @@ try {
     await delay(300)
     const settingsShot=await cdp('Page.captureScreenshot',{format:'png'})
     await fs.writeFile(path.join(root,'artifacts/settings-030.png'),Buffer.from(settingsShot.data,'base64'))
+    await cdp('Page.navigate',{url:'chrome://settings/appearance'})
+    let nativeSettings=false
+    for(let i=0;i<100;i++){
+      try{nativeSettings=await evaluate(`(()=>{const find=root=>{if(root.querySelector('veyrion-native-appearance')?.shadowRoot?.querySelector('#icons .row'))return true;return [...root.querySelectorAll('*')].some(element=>element.shadowRoot&&find(element.shadowRoot))};return find(document)})()`)}catch{}
+      if(nativeSettings)break
+      await delay(100)
+    }
+    assert.ok(nativeSettings,'La apariencia debe estar implementada dentro de la configuración nativa')
+    const nativeAppearance=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{mode:'dark',size:20,spacing:3,colored:true,color:0xd2d2d2}))`)
+    assert.equal(nativeAppearance.color,0xd2d2d2)
+    assert.equal(nativeAppearance.mode,'dark')
+    assert.ok(await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{mode:'invalid',size:999,spacing:0,colored:true,color:0}).then(()=>false,()=>true))`),'La configuración nativa debe rechazar valores inválidos')
+    await cdp('Page.reload')
+    for(let i=0;i<100;i++){
+      try{if(await evaluate(`(()=>{const find=root=>{if(root.querySelector('veyrion-native-appearance')?.shadowRoot?.querySelector('#icons .row'))return true;return [...root.querySelectorAll('*')].some(element=>element.shadowRoot&&find(element.shadowRoot))};return find(document)})()`))break}catch{}
+      await delay(100)
+    }
+    const appearanceShot=await cdp('Page.captureScreenshot',{format:'png'})
+    await fs.writeFile(path.join(root,'artifacts/native-settings-040.png'),Buffer.from(appearanceShot.data,'base64'))
+    if(process.env.VEYRION_GUI_HOLD==='1'){
+      console.log('GUI SETTINGS READY: inspeccionar la ventana y enviar Enter para continuar')
+      await new Promise(resolve=>process.stdin.once('data',resolve))
+    }
+    await cdp('Page.navigate',{url:'chrome://settings/system'})
+    let systemReady=false
+    for(let i=0;i<100;i++){
+      try{systemReady=await evaluate(`(()=>{const scan=root=>!!root.querySelector('settings-brave-system-page-index')||[...root.querySelectorAll('*')].some(e=>e.shadowRoot&&scan(e.shadowRoot));return scan(document)})()`)}catch{}
+      if(systemReady)break
+      await delay(100)
+    }
+    assert.ok(systemReady,'La configuración del sistema debe cargar')
+    assert.ok(await evaluate(`(()=>{const scan=root=>!root.querySelector('settings-brave-origin-onboarding')&&[...root.querySelectorAll('*')].every(e=>!e.shadowRoot||scan(e.shadowRoot));return scan(document)})()`),'La promoción de Brave Origin debe estar retirada del sistema')
     try { await cdp('Browser.close') } catch {}
     for (let i = 0; i < 100 && child.exitCode === null; i++) await delay(100)
     assert.notEqual(child.exitCode, null, 'El perfil de prueba debe cerrarse para comprobar las preferencias persistidas')
+    assert.equal(child.exitCode,0,'El navegador debe cerrarse limpiamente, sin una salida de fallo')
     const saved = JSON.parse(await fs.readFile(path.join(profile, 'Default/Preferences'), 'utf8'))
     assert.equal(saved.side_panel?.is_right_aligned, false, 'La barra nativa debe estar alineada a la izquierda')
     assert.equal(saved.brave?.sidebar?.sidebar_show_option, 0, 'La barra nativa debe permanecer visible al navegar')
@@ -263,8 +363,12 @@ try {
   if (native) report.checks.push('Color aplicado al tema nativo de pestañas y barra; valores fuera de rango rechazados')
   if (native) report.checks.push('Barra nativa izquierda persistente con paneles web; comprobación automática de actualizaciones cada seis horas')
   if (native) report.checks.push('Página arbitraria en panel, ancho real y persistido, vista móvil/escritorio por página, filtros visuales fuera del inicio y estilo configurable')
+  if (native) report.checks.push('Configuración de apariencia nativa, temas persistidos, iconos configurables, diez ciclos de panel y salida limpia')
   report.checks.push('Rechazo de certificado HTTPS no confiable')
+  report.release_version=releaseVersion
+  report.checks.push('Contenido centrado en pantalla ancha; promoción de Brave Origin retirada de Sistema')
   await fs.writeFile(path.join(root, 'artifacts/verification.json'), JSON.stringify(report, null, 2))
+  if(process.env.VEYRION_WINDOWED_VERIFY==='1')await fs.writeFile(path.join(root,'artifacts/windowed-verification-040.json'),JSON.stringify({...report,windowed_verified:true},null,2))
   console.log(JSON.stringify(report, null, 2))
 } finally {
   if (testServer.listening) testServer.close()

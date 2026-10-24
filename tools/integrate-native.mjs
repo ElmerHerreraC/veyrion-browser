@@ -6,11 +6,15 @@ import { integrateNativeSidebar } from './integrate-native-sidebar.mjs'
 import { integrateNativePanels } from './integrate-native-panels.mjs'
 import { integratePanelApi } from './integrate-panel-api.mjs'
 import { integrateSettingsBranding } from './integrate-settings-branding.mjs'
+import { integrateUnifiedUi } from './integrate-unified-ui.mjs'
+import { integrateAppearanceApi } from './integrate-appearance-api.mjs'
+import { integrateSidebarIcons } from './integrate-sidebar-icons.mjs'
+import { integrateNativeSettings } from './integrate-native-settings.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
 const component = path.join(source, 'components/brave_extension/extension')
 const destination = path.join(component, 'brave_extension/veyrion_start')
 fs.mkdirSync(destination, { recursive: true })
-const files = ['index.html', 'style.css', 'customization.css', 'app.js', 'customization.js', 'model.js', 'web-appearance.js', 'update-core.js', 'updates.js', 'updates-background.js', 'update-config.json', ...[16, 32, 48, 128, 256].map(size => `icons/icon${size}.png`)]
+const files = ['index.html', 'style.css', 'customization.css', 'unified.css', 'unified.js', 'app.js', 'customization.js', 'model.js', 'web-appearance.js', 'update-core.js', 'updates.js', 'updates-background.js', 'update-config.json', ...[16, 32, 48, 128, 256].map(size => `icons/icon${size}.png`)]
 for (const file of files) {
   const target = path.join(destination, file)
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -48,5 +52,8 @@ integrateNativeSidebar(source)
 integrateNativePanels(source)
 integratePanelApi(source)
 integrateSettingsBranding(source)
+integrateUnifiedUi(source)
+integrateAppearanceApi(source)
+integrateSidebarIcons(source)
+integrateNativeSettings(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')
-

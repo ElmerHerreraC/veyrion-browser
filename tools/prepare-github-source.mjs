@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { root } from './paths.mjs'
 const files = []
-const directories = ['config', 'docs', 'extension', 'installer', 'tests', 'theme', 'tools']
+const directories = ['config', 'docs', 'extension', 'installer', 'native-ui', 'tests', 'theme', 'tools']
 function visit(relative) {
   const target = path.join(root, relative)
   const stat = fs.lstatSync(target)

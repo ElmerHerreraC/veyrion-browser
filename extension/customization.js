@@ -1,15 +1,23 @@
 import { preferences, updatePreferences } from './app.js'
 import { defaults } from './model.js'
-const keys = ['accent', 'ambient', 'motion', 'customColor', 'useCustomColor', 'brightness', 'blur', 'density', 'effect', 'sounds', 'soundPack', 'volume', 'music', 'showNotes', 'showClock', 'showSidebar', 'syncNativeTheme', 'frameStyle', 'tileSize', 'interfaceFont', 'panelOpacity', 'webEffect', 'webSounds']
+const keys = ['accent', 'ambient', 'motion', 'customColor', 'useCustomColor', 'brightness', 'blur', 'density', 'effect', 'sounds', 'soundPack', 'volume', 'music', 'showNotes', 'showClock', 'showSidebar', 'syncNativeTheme', 'frameStyle', 'tileSize', 'interfaceFont', 'panelOpacity', 'webEffect', 'webSounds', 'themeMode', 'sidebarIconSize', 'sidebarSpacing', 'sidebarColoredIcons', 'wallpaperPreset', 'wallpaperEnabled']
 const nativeColorButton = document.querySelector('#apply-browser-color')
 const nativeColorStatus = document.querySelector('#browser-color-status')
 nativeColorButton.disabled = !globalThis.chrome?.braveTheme?.setVeyrionColor
 if (nativeColorButton.disabled) nativeColorStatus.textContent = 'El tema de pestañas y barra estará disponible en el navegador Veyrion compilado.'
 function applyNativeColor() {
   const state = preferences()
-  const accent = state.useCustomColor ? state.customColor : { violet: '#a48bff', cyan: '#69e9e0', rose: '#ff86b3', lime: '#b8ee80' }[state.accent]
+  const accent = state.useCustomColor ? state.customColor : { violet: '#a48bff', cyan: '#6bdfe5', rose: '#ff85af', lime: '#c2eb79' }[state.accent]
+  if(globalThis.chrome?.runtime?.sendMessage){
+    chrome.runtime.sendMessage({type:'veyrion-appearance',appearance:{mode:state.themeMode,size:state.sidebarIconSize,spacing:state.sidebarSpacing,colored:state.sidebarColoredIcons,color:parseInt(accent.slice(1),16)}},response=>{
+      if(chrome.runtime.lastError||!response?.ok){nativeColorStatus.textContent='No se pudo aplicar la apariencia.';return}
+      nativeColorStatus.dataset.appliedColor=String(response.color)
+      nativeColorStatus.textContent='Apariencia aplicada a toda la ventana y guardada en este perfil.'
+    })
+    return
+  }
   const rgb = [1, 3, 5].map(start => parseInt(accent.slice(start, start + 2), 16))
-  chrome.braveTheme.setVeyrionColor(...rgb, color => {
+  const apply = () => chrome.braveTheme.setVeyrionColor(...rgb, color => {
     if (chrome.runtime.lastError) {
       nativeColorStatus.textContent = 'No se pudo aplicar el color: ' + chrome.runtime.lastError.message
       return
@@ -17,19 +25,25 @@ function applyNativeColor() {
     nativeColorStatus.dataset.appliedColor = String(color)
     nativeColorStatus.textContent = 'Color aplicado a las pestañas y a la barra. Se guardó en este perfil.'
   })
+  if (chrome.braveTheme.setVeyrionChrome) chrome.braveTheme.setVeyrionChrome(state.themeMode,state.sidebarIconSize,state.sidebarSpacing,state.sidebarColoredIcons,()=> {
+    if(chrome.runtime.lastError){nativeColorStatus.textContent=chrome.runtime.lastError.message;return}
+    apply()
+  })
+  else apply()
 }
 nativeColorButton.addEventListener('click', applyNativeColor)
-let nativeThemeTimer, lastNativeTheme
+const nativeFingerprint = () => { const state=preferences(); return JSON.stringify([state.accent,state.useCustomColor,state.customColor,state.themeMode,state.sidebarIconSize,state.sidebarSpacing,state.sidebarColoredIcons]) }
+let nativeThemeTimer, lastNativeTheme = nativeFingerprint()
 function syncNativeTheme() {
   const state = preferences()
   if (!state.syncNativeTheme || nativeColorButton.disabled) return
-  const current = JSON.stringify([state.accent, state.useCustomColor, state.customColor])
+  const current = JSON.stringify([state.accent, state.useCustomColor, state.customColor, state.themeMode, state.sidebarIconSize, state.sidebarSpacing, state.sidebarColoredIcons])
   if (current === lastNativeTheme) return
   clearTimeout(nativeThemeTimer)
-  nativeThemeTimer = setTimeout(() => { lastNativeTheme = current; applyNativeColor() }, 250)
+  lastNativeTheme = current
+  applyNativeColor()
 }
-document.addEventListener('veyrion-appearance', syncNativeTheme)
-syncNativeTheme()
+document.addEventListener('veyrion-settings', syncNativeTheme)
 const presets = {
   obsidian: { accent: 'violet', ambient: 'quiet', soundPack: 'glass', effect: 'none', motion: false },
   terminal: { accent: 'lime', ambient: 'grid', soundPack: 'arcade', effect: 'scanlines', motion: false },

@@ -2,7 +2,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { root } from './paths.mjs'
+import { stabilizeIconBuild } from './stabilize-icon-build.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
+stabilizeIconBuild(source)
 function edit(file, transform) {
   const target = path.join(source, file)
   const before = fs.readFileSync(target, 'utf8')
@@ -61,6 +63,12 @@ CLOSE,
 `
 for (const name of ['app_menu_outline.icon', 'app_menu_color.icon']) {
   fs.writeFileSync(path.join(source, 'components/vector_icons', name), menuVector)
+}
+for (const variant of ['brave','brave_origin']) {
+  for (const name of ['product.icon','product_refresh.icon']) {
+    const target=path.join(source,'components/vector_icons',variant,name)
+    if(fs.existsSync(target)&&fs.readFileSync(target,'utf8')!==menuVector)fs.writeFileSync(target,menuVector)
+  }
 }
 edit('chromium_src/chrome/browser/ui/tabs/tab_style.cc', text => text
   .replace(/int GetTopCornerRadius\(\) const override \{[\s\S]*?\n  \}/, 'int GetTopCornerRadius() const override {\n    return 4;  // Veyrion angular tabs.\n  }')

@@ -229,7 +229,7 @@ void SidebarWebPanelController::CloseWebPanel() {
   edit('browser/ui/views/frame/split_view/brave_multi_contents_view_mini_toolbar.cc', 'veyrion_mobile_button_->SetTextSubpixelRenderingEnabled(false)', text => text.replace('    veyrion_mobile_button_->SetVisible(style_ == Style::kWebPanel);', '    veyrion_mobile_button_->SetTextSubpixelRenderingEnabled(false);\n    veyrion_mobile_button_->SetVisible(style_ == Style::kWebPanel);'))
   edit('browser/ui/views/sidebar/sidebar_add_item_bubble_delegate_view.cc', 'caption->SetSubpixelRenderingEnabled(false)', text => text.replace('  caption->SetHorizontalAlignment', '  caption->SetSubpixelRenderingEnabled(false);\n  caption->SetHorizontalAlignment').replace('  add->SetTooltipText', '  add->SetTextSubpixelRenderingEnabled(false);\n  add->SetTooltipText').replace('  veyrion_error_->SetMultiLine(true);', '  veyrion_error_->SetSubpixelRenderingEnabled(false);\n  veyrion_error_->SetMultiLine(true);'))
   console.log('Paneles Veyrion: direccion libre, ancho arrastrable y vista movil integrados.')
-  edit('browser/ui/color/material_brave_color_mixer.cc', '// Veyrion desktop surfaces', text => text.replace('#include "ui/color/color_provider.h"', '#include "ui/color/color_provider.h"\n#include "ui/color/color_id.h"').replace('  // Use leo color when', `  // Veyrion desktop surfaces keep the accent separate from the dark frame.
+  edit('browser/ui/color/material_brave_color_mixer.cc', '// Veyrion', text => text.replace('#include "ui/color/color_provider.h"', '#include "ui/color/color_provider.h"\n#include "ui/color/color_id.h"').replace('  // Use leo color when', `  // Veyrion desktop surfaces keep the accent separate from the dark frame.
   if (is_dark) {
     mixer[ui::kColorFrameActive] = {SkColorSetRGB(0x10, 0x0d, 0x18)};
     mixer[ui::kColorFrameInactive] = {SkColorSetRGB(0x13, 0x10, 0x1d)};
@@ -240,7 +240,7 @@ void SidebarWebPanelController::CloseWebPanel() {
   }
 
   // Use leo color when`))
-  edit('browser/resources/settings/br/settings_ui.ts', '/* Veyrion settings */', text => text.replace('      /** Styling tweaks', `      /* Veyrion settings */
+  edit('browser/resources/settings/br/settings_ui.ts', '/* Veyrion', text => text.replace('      /** Styling tweaks', `      /* Veyrion settings */
       :host {
         --leo-radius-xl: 6px;
         --leo-radius-m: 4px;
@@ -261,4 +261,3 @@ void SidebarWebPanelController::CloseWebPanel() {
       IconDimensionForLayout(), provider->GetColor(kColorOmniboxResultsIcon));
 }`))
 }
-

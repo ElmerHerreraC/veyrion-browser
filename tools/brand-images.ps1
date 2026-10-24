@@ -29,4 +29,3 @@ try {
   }
   Write-Output "Logotipos y avatares propios: $($files.Count)"
 } finally { $logo.Dispose() }
-

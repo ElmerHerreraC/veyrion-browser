@@ -26,4 +26,3 @@ body.motion[data-ambient=orbit]::before{animation:veyrion-ambient 16s ease-in-ou
 @media(max-width:850px){body:not([data-frame-style=classic]) .workspace{grid-template-columns:1fr}body:not([data-frame-style=classic]) .hero{margin-top:8vh}}
 @media(prefers-reduced-motion:reduce){body::before{animation:none!important}.shortcut{transition:none!important}}
 body:not([data-frame-style=classic]) .engine-card{min-height:84px;padding:18px;align-items:center}
-
