@@ -1,18 +1,21 @@
-# Publicar una actualización
+# Actualizaciones de Veyrion
 
-Repositorio del canal: ElmerHerreraC/veyrion-browser.
+El instalador registra una tarea para el usuario actual, sin permisos de administrador ni contraseñas guardadas. Consulta GitHub al iniciar sesión y cada 15 minutos. Necesita conexión a Internet y la sesión del usuario abierta. No necesita Node.js en la laptop.
 
-1. Cambiar de forma coherente la versión en package.json, installer/veyrion.iss y extension/update-config.json.
-2. Mantener la misma clave pública incorporada en el navegador. La clave privada se guarda únicamente en artifacts/update-signing/private.pem y debe tener una copia de respaldo privada. Nunca subirla a GitHub ni incluirla en el instalador.
-3. Ejecutar las pruebas y la canalización de compilación. El instalador se genera en dist/Veyrion-Setup-x64.exe. package-native.ps1 registra su versión y SHA256 en release-build.json; sign-update.mjs rechaza discrepancias antes de crear el manifiesto firmado.
-4. Crear una GitHub Release estable con etiqueta v seguida de la versión, por ejemplo v0.2.0.
-5. Subir exactamente el instalador validado, Veyrion-Setup-x64.exe.sha256 y veyrion-update.json de esa misma ejecución. Mantener los nombres de archivo.
-6. Publicar la Release como versión más reciente. El cliente comprobará la firma, el repositorio, la versión, la URL del instalador y su SHA256 antes de ofrecer una descarga.
+Cada actualización debe llevar una firma RSA-SHA256 verificable con la clave pública incluida en la instalación. El actualizador comprueba el repositorio, la versión, la URL exacta, el tamaño y SHA-256 del instalador. Una firma inválida, un archivo alterado o una versión anterior no se ejecutan. Los errores quedan en `%LOCALAPPDATA%\Veyrion\Updates\status.json` y se reintentan en la siguiente comprobación.
 
-La consulta automática ocurre al iniciar y cada seis horas. También se puede solicitar desde Configuración rápida → Actualizar. No hay instalación silenciosa: el usuario guarda la descarga verificada y ejecuta el instalador. Los sitios y extensiones ajenos no tienen acceso a la clave de publicación.
+La descarga se realiza en segundo plano. Si Veyrion está abierto, espera a su cierre normal antes de iniciar el instalador silencioso. No termina procesos, reinicia Windows ni elimina el perfil. La tarea se elimina al desinstalar Veyrion.
 
-Si se pierde la clave privada, será necesario un plan de rotación y distribuir una versión que incorpore la nueva clave por un canal de confianza. No regenerar la clave automáticamente.
+Brave y Chromium son dependencias fijadas en `config/upstream.json`. Una actualización del motor requiere revisar los cambios, actualizar esas referencias, volver a aplicar las integraciones de Veyrion, compilar y superar las pruebas antes de firmar y publicar una nueva versión de Veyrion. El actualizador no ejecuta instaladores de Brave. Esta integración requiere mantenimiento; una nueva versión upstream no garantiza compatibilidad automática.
 
-La firma RSA del manifiesto verifica al editor para Veyrion. Windows SmartScreen y los antivirus aplican sus propias políticas; esta firma no sustituye Authenticode.
+Antes de publicar: ejecutar pruebas unitarias, pruebas nativas de navegación/extensiones/paneles/apariencia, prueba del modo oscuro web, comprobación de permisos AppContainer, prueba de instalación y registro de tarea, y una prueba prolongada de estabilidad. Conservar las atribuciones y licencias upstream.
 
-Después de publicar, ejecuta node tools/verify-release.mjs para contrastar la firma y el SHA-256 del archivo público con el instalador local.
+## Publicación del canal
+
+Mantener sincronizadas las versiones de `package.json`, `extension/manifest.json`, `extension/update-config.json` e `installer/veyrion.iss`. `tools/package-native.ps1` prepara el actualizador con la clave pública de `extension/update-config.json`. `tools/sign-update.mjs` firma el recibo del instalador usando la clave privada existente en `artifacts/update-signing/private.pem`; esa clave nunca debe publicarse ni reemplazarse para instalaciones existentes. Si falta, recuperar la copia del editor antes de publicar. Una clave nueva no autoriza actualizaciones para los usuarios existentes.
+
+Publicar en el tag `v<versión>` los tres archivos de `dist`: `Veyrion-Setup-x64.exe`, `Veyrion-Setup-x64.exe.sha256` y `veyrion-update.json`. Marcar la publicación estable como latest y ejecutar `node tools/verify-release.mjs` para verificar firma, versión, tamaño y hash del canal público. El manifiesto firmado no sustituye una firma Authenticode de Windows.
+
+## Modo oscuro web
+
+En `chrome://settings/appearance`, activar **Forzar modo oscuro en páginas web**. Usa `webkit.webprefs.force_dark_mode_enabled`, observado por las pestañas del navegador y persistido por perfil. No depende del modo claro/oscuro de la ventana ni de scripts que lean el contenido de las páginas. Algunos sitios pueden verse mal; desactivarlo restaura su representación normal. Puede ser necesario recargar una pestaña abierta.

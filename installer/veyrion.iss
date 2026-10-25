@@ -8,7 +8,7 @@
 [Setup]
 AppId={{6C63BB20-2F16-4AF6-8CED-CBA7E7536C1A}
 AppName=Veyrion
-AppVersion=0.4.0
+AppVersion=0.4.1
 AppPublisher=Veyrion Project
 DefaultDirName={localappdata}\Programs\Veyrion
 DefaultGroupName=Veyrion
@@ -31,10 +31,33 @@ Name: "desktopicon"; Description: "Crear acceso de Veyrion en el escritorio"
 [Files]
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Veyrion.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\updater\*"; DestDir: "{app}\updater"; Flags: ignoreversion
+Source: "..\tools\configure-sandbox-access.ps1"; DestDir: "{app}\updater"; Flags: ignoreversion
 [Icons]
 Name: "{group}\Veyrion"; Filename: "{app}\veyrion.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Veyrion.ico"
 Name: "{autodesktop}\Veyrion"; Filename: "{app}\veyrion.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Veyrion.ico"; Tasks: desktopicon
 [Run]
 Filename: "{app}\veyrion.exe"; Description: "Abrir Veyrion"; Flags: nowait postinstall skipifsilent
 ; User profiles are deliberately not deleted during uninstall.
+[UninstallRun]
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File ""{app}\updater\register.ps1"" -Uninstall"; Flags: runhidden waituntilterminated
+[Code]
+procedure RunConfiguration(const ScriptName, Extra: String);
+var ResultCode: Integer;
+begin
+  if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' +
+    ExpandConstant('{app}\updater\') + ScriptName + '" ' + Extra,
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    RaiseException('No se pudo configurar Veyrion: ' + ScriptName);
+  if ResultCode <> 0 then
+    RaiseException('La configuración de Veyrion falló: ' + ScriptName);
+end;
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then begin
+    RunConfiguration('configure-sandbox-access.ps1', '-InstallDir "' + ExpandConstant('{app}') + '"');
+    RunConfiguration('register.ps1', '');
+  end;
+end;
 

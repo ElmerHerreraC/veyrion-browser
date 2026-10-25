@@ -1,7 +1,7 @@
 import {sendWithPromise as veyrionSend} from 'chrome://resources/js/cr.js'
 
 interface VeyrionAppearance {
-  mode: string; color: number; size: number; spacing: number; colored: boolean;
+  mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean;
   items: Array<{index: number; title: string; visible: boolean; icon: string}>;
 }
 
@@ -34,6 +34,9 @@ class VeyrionNativeAppearance extends HTMLElement {
       <button class="theme" data-color="55741" style="--accent:#00d9bd"><span class="preview"></span><span>Personalizado <b>○</b></span></button>
     </div><div class="modes"><button data-mode="light">Claro</button><button data-mode="system">Auto</button><button data-mode="dark">Oscuro</button></div>
     <label class="row">Color de acento de la ventana<input type="color" id="accent" aria-label="Color de acento de la ventana"></label></div>
+    <h2>PÁGINAS WEB</h2><div class="card">
+    <label class="row">Forzar modo oscuro en páginas web<input id="force-dark" type="checkbox"></label>
+    <p>Oscurece las páginas que no ofrecen un tema oscuro mediante el motor del navegador. Es independiente del tema de la ventana. Si una página se ve mal, desactiva esta opción. Recarga las páginas abiertas si es necesario.</p></div>
     <h2 id="veyrion-icons">BARRA LATERAL · ICONOS</h2><div class="card">
     <label class="row">Tamaño de los iconos<input id="size" type="range" min="14" max="26" aria-label="Tamaño de los iconos"></label>
     <label class="row">Separación<input id="spacing" type="range" min="0" max="10" aria-label="Separación de los iconos"></label>
@@ -51,6 +54,7 @@ class VeyrionNativeAppearance extends HTMLElement {
       else this.state_.spacing=Number(input.value)
       this.save_()
     })
+    this.root_.getElementById('force-dark')!.addEventListener('change',()=>this.request_({forceDark:(this.root_.getElementById('force-dark') as HTMLInputElement).checked}))
     this.request_({})
   }
   private save_(){window.clearTimeout(this.timer_);this.timer_=window.setTimeout(()=>{if(this.state_)this.request_({mode:this.state_.mode,color:this.state_.color,size:this.state_.size,spacing:this.state_.spacing,colored:this.state_.colored})},150)}
@@ -65,6 +69,7 @@ class VeyrionNativeAppearance extends HTMLElement {
     ;(this.root_.getElementById('accent') as HTMLInputElement).value='#'+state.color.toString(16).padStart(6,'0')
     for(const id of ['size','spacing'] as const)(this.root_.getElementById(id) as HTMLInputElement).value=String(state[id])
     ;(this.root_.getElementById('colored') as HTMLInputElement).checked=state.colored
+    ;(this.root_.getElementById('force-dark') as HTMLInputElement).checked=state.forceDark
     const list=this.root_.getElementById('icons')!;list.replaceChildren()
     for(const item of state.items){
       const row=document.createElement('div');row.className='row'

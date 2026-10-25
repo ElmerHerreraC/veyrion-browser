@@ -11,6 +11,8 @@ foreach ($file in @('resources.pak','icudtl.dat','locales')) {
 $compiler = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe", "$env:USERPROFILE\AppData\Local\Programs\Inno Setup 6\ISCC.exe") | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 if (!$compiler) { throw 'Instala Inno Setup 6 desde https://jrsoftware.org/isdl.php para generar el instalador.' }
 $spec = Join-Path (Split-Path -Parent $PSScriptRoot) 'installer\veyrion.iss'
+& node (Join-Path $PSScriptRoot 'prepare-updater.mjs')
+if ($LASTEXITCODE -ne 0) { throw 'No se pudo preparar la clave pública del actualizador.' }
 & $compiler "/DPayloadDir=$payload" $spec
 if ($LASTEXITCODE -ne 0) { throw 'Falló la generación del instalador.' }
 $project = Split-Path -Parent $PSScriptRoot

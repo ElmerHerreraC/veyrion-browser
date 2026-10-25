@@ -28,6 +28,13 @@ $shortcut = $shortcutShell.CreateShortcut($shortcutPath)
 if ($shortcut.TargetPath -ine $installedExe -or $shortcut.Arguments) { throw 'El acceso no abre directamente el ejecutable de Veyrion.' }
 if ($shortcut.IconLocation -notlike '*\Veyrion.ico*') { throw 'El acceso no tiene el icono propio.' }
 $env:NEBULA_BROWSER_EXE = $installedExe
+& (Join-Path $PSScriptRoot 'configure-sandbox-access.ps1') -InstallDir $installedDir -VerifyOnly
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$updateTask = Get-ScheduledTask -TaskName ('VeyrionUpdate-' + $identity)
+if ($updateTask.State -eq 'Disabled' -or $updateTask.Actions.Arguments -notlike '*\Veyrion\updater\update.ps1*') { throw 'El actualizador automático no está habilitado.' }
+$updateConfig = Get-Content -LiteralPath (Join-Path $installedDir 'updater\config.json') -Raw | ConvertFrom-Json
+$expectedVersion = (Get-Content -LiteralPath (Join-Path $project 'package.json') -Raw | ConvertFrom-Json).version
+if ($updateConfig.version -ne $expectedVersion) { throw 'El actualizador tiene otra versión instalada.' }
 $env:VEYRION_NATIVE_VERIFY = '1'
 & node (Join-Path $PSScriptRoot 'verify.mjs')
 if ($LASTEXITCODE -ne 0) { throw 'Falló la prueba del navegador instalado.' }

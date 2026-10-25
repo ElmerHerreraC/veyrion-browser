@@ -12,8 +12,8 @@ let available
 function show(result) {
   available = result?.status === 'available' ? result.manifest : undefined
   downloadButton.hidden = !available
-  const messages = { available: `Nueva versión ${available?.version} disponible.`, current: 'Estás usando la versión más reciente.', unpublished: 'El canal de GitHub aún no tiene una versión firmada publicada.', error: result?.message || 'No se pudo consultar GitHub.' }
-  label.textContent = messages[result?.status] || 'Comprobaciones automáticas cada seis horas.'
+  const messages = { available: `Nueva versión ${available?.version} disponible. El actualizador de Windows la descargará y la instalará al cerrar el navegador.`, current: 'No hay una versión más reciente en el canal firmado.', unpublished: 'El canal de GitHub aún no tiene una versión firmada publicada.', error: result?.message || 'No se pudo consultar GitHub.' }
+  label.textContent = messages[result?.status] || 'Actualizaciones automáticas de Windows cada 15 minutos y al iniciar sesión.'
 }
 if (globalThis.chrome?.storage) {
   chrome.storage.local.get('veyrionUpdate', value => show(value.veyrionUpdate))

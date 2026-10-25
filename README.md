@@ -4,12 +4,13 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
-La versión 0.4.0 terminó la compilación, las pruebas funcionales y de extensiones MV3, y la actualización de la instalación local en Windows x64. Se comprobaron la personalización nativa, la persistencia del tema al recargar, diez ciclos de paneles con salida limpia, el centrado en pantallas anchas y la configuración del sistema sin la promoción de Brave Origin. Descarga el instalador en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
+La versión 0.4.1 añade modo oscuro web nativo y actualizaciones automáticas, y corrige los permisos de instalación que causaban un cierre al crear procesos AppContainer. Mantiene la personalización nativa, las extensiones Chromium y los paneles móviles. Descarga el instalador en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
 
 ## Interfaz
 
 - Barra lateral nativa persistente, con la lista de lectura retirada de los accesos en 0.4.0.
 - En 0.4.0, `chrome://settings/appearance` contiene los temas y controles de modo claro/automático/oscuro, color de acento, tamaño, separación, visibilidad, símbolos y orden de iconos. Se guardan como preferencias nativas del perfil y se aplican fuera de la nueva pestaña.
+- En 0.4.1, la misma configuración permite forzar el modo oscuro de las páginas web de forma independiente del tema de la ventana.
 - Se retiran la franja de atribución «Personalizar Brave», la promoción de Brave Origin y el acceso lateral de Brave Talk. La nueva pestaña se centra también en monitores anchos.
 - Paneles web para WhatsApp, Telegram, Discord, Twitch y Spotify, que se abren al seleccionarlos. Cada servicio mantiene sus propios requisitos de acceso y reproducción.
 - Color de acento sincronizado con pestañas y barra de herramientas; borde lateral sigue el tema.
@@ -22,7 +23,7 @@ La apariencia está inspirada en Opera GX. No se distribuyen sus recursos propie
 
 ## Actualizaciones
 
-El componente interno consulta cada seis horas el canal público de GitHub Releases. Comprueba una firma RSA-SHA256 con clave pública incorporada y la huella SHA-256 y el tamaño del instalador. La descarga verificada se ofrece en Configuración rápida → Actualizar. El usuario ejecuta el instalador para completar la actualización conservando su perfil. No se instalan versiones inferiores ni se envían perfiles o historial a GitHub.
+Desde 0.4.1, una tarea de Windows para el usuario consulta GitHub cada 15 minutos y al iniciar sesión, descarga actualizaciones firmadas y las instala al cerrar Veyrion. Verifica RSA-SHA256, la URL del repositorio, el tamaño y SHA-256, y rechaza versiones anteriores. No envía perfiles ni historial. La descarga manual sigue disponible en Configuración rápida → Actualizar; la comprobación informativa del componente interno sigue siendo cada seis horas. Instala 0.4.1 una vez para habilitar el nuevo actualizador en instalaciones anteriores.
 
 Los instaladores y `veyrion-update.json` se publican juntos en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases). La firma del canal de actualizaciones no equivale a una firma Authenticode de Windows.
 
@@ -41,4 +42,3 @@ Se necesita Windows x64, Node 24, pnpm, Git, Visual Studio 2026 Build Tools con 
 La publicación del canal requiere la clave privada del editor. No crees una clave diferente para publicar actualizaciones destinadas a instalaciones existentes. Véase `docs/UPDATES.md`.
 
 El instalador crea accesos que abren directamente `veyrion.exe` con icono y perfil propios. No recurre al Brave instalado. Para fijar el icono permanentemente usa «Anclar a la barra de tareas».
-

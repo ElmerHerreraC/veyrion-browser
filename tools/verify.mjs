@@ -4,6 +4,7 @@ import { spawn, execFileSync } from 'node:child_process'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { createServer as createTlsServer } from 'node:https'
+import {inflateSync} from 'node:zlib'
 import { root, braveExecutable } from './paths.mjs'
 const profile = path.join(root, '.verify-profile', String(Date.now()))
 const executable = braveExecutable()
@@ -50,12 +51,19 @@ async function evaluate(expression) {
 }
 try {
   let port
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 600; i++) {
+    if(child.exitCode!==null)throw new Error('El binario de prueba terminó antes de iniciar DevTools: '+child.exitCode)
     try { port = Number((await fs.readFile(path.join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]); break } catch { await delay(100) }
   }
-  assert.ok(port, 'Brave debe iniciar el depurador con el perfil de pruebas')
-  const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
-  const target = targets.find(item => item.type === 'page')
+  assert.ok(port, 'Veyrion debe iniciar el depurador con el perfil de pruebas')
+  let target
+  for(let i=0;i<150;i++) {
+    const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
+    target = targets.find(item => item.type === 'page')
+    if(target)break
+    if(child.exitCode!==null)throw new Error('Veyrion terminó antes de abrir la pestaña de prueba: '+child.exitCode)
+    await delay(100)
+  }
   assert.ok(target, 'Debe existir una pestaña')
   socket = new WebSocket(target.webSocketDebuggerUrl)
   await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject })
@@ -320,6 +328,22 @@ try {
       await delay(100)
     }
     assert.ok(nativeSettings,'La apariencia debe estar implementada dentro de la configuración nativa')
+    for (const enabled of [false, true, false]) {
+      const dark = await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{forceDark:${enabled}}))`)
+      assert.equal(dark.forceDark, enabled, 'El modo oscuro web debe poder activarse y desactivarse')
+      await cdp('Page.navigate',{url:`http://127.0.0.1:${testServer.address().port}/dark-mode-check`})
+      for(let i=0;i<100;i++){try{if(await evaluate('document.body?.dataset.executed === "yes"'))break}catch{}await delay(100)}
+      const png=Buffer.from((await cdp('Page.captureScreenshot',{format:'png',clip:{x:100,y:300,width:1,height:1,scale:1}})).data,'base64')
+      assert.equal(png[25],2,'La captura de prueba debe ser RGB')
+      const chunks=[]
+      for(let offset=8;offset<png.length;){const length=png.readUInt32BE(offset);if(png.toString('ascii',offset+4,offset+8)==='IDAT')chunks.push(png.subarray(offset+8,offset+8+length));offset+=length+12}
+      const pixel=inflateSync(Buffer.concat(chunks))
+      assert.ok(enabled ? pixel[1]<100 : pixel[1]>180,`El fondo real debe cambiar al activar/desactivar el modo oscuro: ${pixel[1]}`)
+      await fs.writeFile(path.join(root,`artifacts/web-dark-${enabled}.png`),png)
+      await cdp('Page.navigate',{url:'chrome://settings/appearance'})
+      for(let i=0;i<100;i++){try{if(await evaluate(`(()=>{const scan=root=>!!root.querySelector('veyrion-native-appearance')?.shadowRoot?.querySelector('#icons .row')||[...root.querySelectorAll('*')].some(e=>e.shadowRoot&&scan(e.shadowRoot));return scan(document)})()`))break}catch{}await delay(100)}
+    }
+    assert.ok(await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{forceDark:'yes'}).then(()=>false,()=>true))`),'El modo oscuro web debe rechazar valores inválidos')
     const nativeAppearance=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{mode:'dark',size:20,spacing:3,colored:true,color:0xd2d2d2}))`)
     assert.equal(nativeAppearance.color,0xd2d2d2)
     assert.equal(nativeAppearance.mode,'dark')
@@ -344,11 +368,14 @@ try {
     }
     assert.ok(systemReady,'La configuración del sistema debe cargar')
     assert.ok(await evaluate(`(()=>{const scan=root=>!root.querySelector('settings-brave-origin-onboarding')&&[...root.querySelectorAll('*')].every(e=>!e.shadowRoot||scan(e.shadowRoot));return scan(document)})()`),'La promoción de Brave Origin debe estar retirada del sistema')
+    const stabilitySeconds=Number(process.env.VEYRION_STABILITY_SECONDS)||0
+    if(stabilitySeconds>0){const deadline=Date.now()+stabilitySeconds*1000;console.log(`Estabilidad: ${stabilitySeconds}s de reposo con sandbox activo`);while(Date.now()<deadline){assert.equal(child.exitCode,null,'El navegador debe permanecer abierto en reposo');await evaluate('document.readyState');await delay(2000)}}
     try { await cdp('Browser.close') } catch {}
     for (let i = 0; i < 100 && child.exitCode === null; i++) await delay(100)
     assert.notEqual(child.exitCode, null, 'El perfil de prueba debe cerrarse para comprobar las preferencias persistidas')
     assert.equal(child.exitCode,0,'El navegador debe cerrarse limpiamente, sin una salida de fallo')
     const saved = JSON.parse(await fs.readFile(path.join(profile, 'Default/Preferences'), 'utf8'))
+    assert.equal(saved.webkit?.webprefs?.force_dark_mode_enabled,false,'El modo oscuro web debe conservar su preferencia al cerrar')
     assert.equal(saved.side_panel?.is_right_aligned, false, 'La barra nativa debe estar alineada a la izquierda')
     assert.equal(saved.brave?.sidebar?.sidebar_show_option, 0, 'La barra nativa debe permanecer visible al navegar')
     assert.equal(saved.veyrion?.desktop_layout_version, 1, 'La migración de interfaz debe persistirse una sola vez')
@@ -367,6 +394,7 @@ try {
   report.checks.push('Rechazo de certificado HTTPS no confiable')
   report.release_version=releaseVersion
   report.checks.push('Contenido centrado en pantalla ancha; promoción de Brave Origin retirada de Sistema')
+  if(native)report.checks.push('Modo oscuro web nativo: cambio real de fondo claro/oscuro y reversión sin cambiar el tema de ventana')
   await fs.writeFile(path.join(root, 'artifacts/verification.json'), JSON.stringify(report, null, 2))
   if(process.env.VEYRION_WINDOWED_VERIFY==='1')await fs.writeFile(path.join(root,'artifacts/windowed-verification-040.json'),JSON.stringify({...report,windowed_verified:true},null,2))
   console.log(JSON.stringify(report, null, 2))
@@ -376,4 +404,3 @@ try {
   if (socket?.readyState === WebSocket.OPEN) { try { await cdp('Browser.close') } catch {} socket.close() }
   if (child.exitCode === null) child.kill()
 }
-
