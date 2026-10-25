@@ -3,6 +3,7 @@ import {sendWithPromise as veyrionSend} from 'chrome://resources/js/cr.js'
 interface VeyrionAppearance {
   mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean;
   items: Array<{index: number; title: string; visible: boolean; icon: string}>;
+  workspaces: Array<{id:number; name:string; tabs:number; current:boolean}>;
 }
 
 class VeyrionNativeAppearance extends HTMLElement {
@@ -10,6 +11,8 @@ class VeyrionNativeAppearance extends HTMLElement {
   private timer_: number|undefined
   private root_ = this.attachShadow({mode:'open'})
   connectedCallback() {
+    const sidebarOnly = new URLSearchParams(location.search).has('veyrionSidebar')
+    if(sidebarOnly)document.documentElement.setAttribute('data-veyrion-sidebar','')
     this.root_.appendChild(braveHtml`<style>
       :host{display:block;color:var(--cr-primary-text-color);font:13px 'Segoe UI',sans-serif;margin:12px 0 32px}
       *{box-sizing:border-box}h2{font-size:11px;color:var(--cr-secondary-text-color);letter-spacing:.6px;margin:28px 0 12px}
@@ -25,18 +28,20 @@ class VeyrionNativeAppearance extends HTMLElement {
       input[type=color]{width:58px;height:30px;background:transparent;border:1px solid #555}select{max-width:130px;background:var(--vey-card,#191919);color:inherit;border:1px solid #555;border-radius:3px;padding:5px}
       .icons .row{justify-content:flex-start}.name{flex:1;overflow:hidden;text-overflow:ellipsis}.arrow{background:transparent;border:1px solid #555;color:inherit;border-radius:3px;padding:4px 9px}
       p{font-size:12px;color:var(--cr-secondary-text-color);line-height:1.6}#status{min-height:20px}.label{font-size:12px}.heading{font-size:22px;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
-      @media(max-width:640px){.themes{gap:12px;grid-template-columns:repeat(2,1fr)}.icons .row{flex-wrap:wrap}}
+      :host{min-width:0;max-width:100%;overflow-wrap:anywhere}.themes{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px}.row{flex-wrap:wrap;gap:10px}.card{min-width:0}input,select{max-width:100%}.name{min-width:60px}:host(.sidebar-only) .general{display:none}:host(.sidebar-only) .heading{font-size:17px}#workspace-name{width:100%;padding:8px;background:transparent;color:inherit;border:1px solid #666}#workspaces button{background:transparent;color:inherit;border:1px solid #666;padding:7px;border-radius:4px}
+      @media(max-width:380px){.themes{gap:10px}.card{padding:12px}.row{gap:8px}input[type=range]{width:140px}}
     </style><div class="heading">ASPECTO VISUAL</div><p>Personaliza las pestañas, la barra de direcciones, los menús y la barra lateral.</p>
-    <h2>TEMAS</h2><div class="card"><div class="themes">
+    <h2 class="general">TEMAS</h2><div class="card general"><div class="themes">
       <button class="theme" data-color="4319155" style="--accent:#41e7b3"><span class="preview"></span><span>After Eight <b>○</b></span></button>
       <button class="theme" data-color="16240227" style="--accent:#f7ce63"><span class="preview"></span><span>Dorado <b>○</b></span></button>
       <button class="theme" data-color="13816530" style="--accent:#d2d2d2"><span class="preview"></span><span>White Wolf <b>○</b></span></button>
       <button class="theme" data-color="55741" style="--accent:#00d9bd"><span class="preview"></span><span>Personalizado <b>○</b></span></button>
     </div><div class="modes"><button data-mode="light">Claro</button><button data-mode="system">Auto</button><button data-mode="dark">Oscuro</button></div>
     <label class="row">Color de acento de la ventana<input type="color" id="accent" aria-label="Color de acento de la ventana"></label></div>
-    <h2>PÁGINAS WEB</h2><div class="card">
+    <h2 class="general">PÁGINAS WEB</h2><div class="card general">
     <label class="row">Forzar modo oscuro en páginas web<input id="force-dark" type="checkbox"></label>
     <p>Oscurece las páginas que no ofrecen un tema oscuro mediante el motor del navegador. Es independiente del tema de la ventana. Si una página se ve mal, desactiva esta opción. Recarga las páginas abiertas si es necesario.</p></div>
+    <h2>TABLEROS · ESPACIOS DE PESTAÑAS</h2><div class="card"><p>Cada tablero mantiene su propia ventana y sus pestañas abiertas. Cambiar de tablero no cierra los demás.</p><div id="workspaces"></div><input id="workspace-name" maxlength="60" placeholder="Nombre del tablero" aria-label="Nombre del tablero"><div class="row"><button class="arrow" id="workspace-create">Añadir tablero</button><button class="arrow" id="workspace-rename">Nombrar este tablero</button></div></div>
     <h2 id="veyrion-icons">BARRA LATERAL · ICONOS</h2><div class="card">
     <label class="row">Tamaño de los iconos<input id="size" type="range" min="14" max="26" aria-label="Tamaño de los iconos"></label>
     <label class="row">Separación<input id="spacing" type="range" min="0" max="10" aria-label="Separación de los iconos"></label>
@@ -55,6 +60,12 @@ class VeyrionNativeAppearance extends HTMLElement {
       this.save_()
     })
     this.root_.getElementById('force-dark')!.addEventListener('change',()=>this.request_({forceDark:(this.root_.getElementById('force-dark') as HTMLInputElement).checked}))
+    if(sidebarOnly){this.classList.add('sidebar-only');this.root_.querySelector('.heading')!.textContent='CONFIGURACIÓN DE LA BARRA LATERAL';this.root_.querySelector('p')!.textContent='Elige accesos, ajusta iconos y cambia de tablero.'}
+    for(const action of ['create','rename'])this.root_.getElementById('workspace-'+action)!.addEventListener('click',()=>{
+      const name=(this.root_.getElementById('workspace-name') as HTMLInputElement).value.trim()
+      if(!name){this.root_.getElementById('status')!.textContent='Escribe un nombre para el tablero.';return}
+      this.request_({workspaceAction:action,name})
+    })
     this.request_({})
   }
   private save_(){window.clearTimeout(this.timer_);this.timer_=window.setTimeout(()=>{if(this.state_)this.request_({mode:this.state_.mode,color:this.state_.color,size:this.state_.size,spacing:this.state_.spacing,colored:this.state_.colored})},150)}
@@ -64,6 +75,8 @@ class VeyrionNativeAppearance extends HTMLElement {
   }
   private render_(){
     const state=this.state_!
+    const workspaces=this.root_.getElementById('workspaces')!;workspaces.replaceChildren()
+    for(const [position,space] of state.workspaces.entries()){const name=space.name===`Tablero ${space.id}`?(space.current?'Personal':'Tablero '+(position+1)):space.name;const button=document.createElement('button');button.textContent=(space.current?'● ':'○ ')+name;button.setAttribute('aria-pressed',String(space.current));button.addEventListener('click',()=>this.request_({workspaceAction:'activate',id:space.id}));const row=document.createElement('div');row.className='row';row.append(button);workspaces.append(row)}
     this.root_.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset['mode']===state.mode)))
     this.root_.querySelectorAll<HTMLButtonElement>('[data-color]').forEach(button=>{const selected=Number(button.dataset['color'])===state.color;button.setAttribute('aria-pressed',String(selected));button.querySelector('b')!.textContent=selected?'◉':'○'})
     ;(this.root_.getElementById('accent') as HTMLInputElement).value='#'+state.color.toString(16).padStart(6,'0')
@@ -92,8 +105,14 @@ RegisterStyleOverride('settings-ui',html`<style>
   #container{max-width:1250px;width:100%;align-self:center}cr-toolbar{max-width:1160px;width:100%;align-self:center;--cr-toolbar-background-color:transparent}
   #veyrion-settings-nav{display:flex;align-items:center;justify-content:center;gap:28px;min-height:62px;font:10px 'Segoe UI',sans-serif}#veyrion-settings-nav a{color:var(--cr-secondary-text-color);text-decoration:none}#veyrion-settings-nav strong{font-size:22px;letter-spacing:.6px}#veyrion-settings-nav a:hover{color:var(--cr-link-color)}
   @media(prefers-color-scheme:light){:host{--vey-card:#fafafa;--vey-border:#ccc;--leo-color-container-background:#eee;--leo-color-page-background:#eee;--cr-card-background-color:#fafafa;background:#eee}}
+  :host{display:flex!important;width:100%;max-width:100%;min-width:0;box-sizing:border-box}#container{min-width:0}#main{flex:1 1 0!important;min-width:0!important}#veyrion-settings-nav{flex-wrap:wrap}
+  :host-context([data-veyrion-sidebar]) #veyrion-settings-nav,:host-context([data-veyrion-sidebar]) cr-toolbar,:host-context([data-veyrion-sidebar]) #left{display:none!important}
+  :host-context([data-veyrion-sidebar]) #main{margin:0 10px!important}
   @media(max-width:980px){#main{margin:0 12px!important}}
+  @media(max-width:600px){#veyrion-settings-nav{display:none}#main{margin:0 8px!important}.card{max-width:100%}cr-toolbar{--cr-toolbar-left-spacer-width:0}}
 </style>`)
+RegisterStyleOverride('settings-main',html`<style>:host{min-width:0!important;max-width:100%;box-sizing:border-box}#basicPage,#advancedPage{min-width:0!important}</style>`)
+RegisterStyleOverride('settings-appearance-page',html`<style>:host{min-width:0!important;max-width:100%;--cr-section-padding:12px;--cr-centered-card-width-percentage:1} .cr-row{flex-wrap:wrap;min-width:0}veyrion-native-appearance{max-width:100%}:host-context([data-veyrion-sidebar]) > :not(veyrion-native-appearance):not(style){display:none!important}</style>`)
 RegisterStyleOverride('settings-menu',html`<style>
   :host{background:var(--vey-card,#191919);border:1px solid var(--vey-border,#333);border-radius:7px;padding:16px!important;margin-top:12px!important}
   a[href]{font-size:11px!important;text-transform:uppercase;letter-spacing:.2px;min-height:32px!important;margin:0!important;padding:5px 12px!important;border-radius:4px!important}

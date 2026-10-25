@@ -4,9 +4,11 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
-La versión 0.4.1 añade modo oscuro web nativo y actualizaciones automáticas, y corrige los permisos de instalación que causaban un cierre al crear procesos AppContainer. Mantiene la personalización nativa, las extensiones Chromium y los paneles móviles. Descarga el instalador en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
+La versión 0.5.0 rediseña el inicio, añade fondos locales animados con pausa automática y mejora la barra lateral: paneles internos compactos, sustitución de Favoritos y paneles web, accesos a Descargas y Extensiones y configuración dedicada. Incluye tableros basados en ventanas nombradas y corrige una carrera de animación al ocultar las flechas de desplazamiento. Mantiene el modo oscuro web, las actualizaciones firmadas y la reparación de permisos AppContainer. Descarga el instalador en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
 
 ## Interfaz
+
+Las funciones nuevas y sus límites se describen en [Barra lateral, tableros y fondos](docs/SIDEBAR.md). Los tableros conservan conjuntos de pestañas por ventana; no son espacios dentro de una única ventana como en Opera GX.
 
 - Barra lateral nativa persistente, con la lista de lectura retirada de los accesos en 0.4.0.
 - En 0.4.0, `chrome://settings/appearance` contiene los temas y controles de modo claro/automático/oscuro, color de acento, tamaño, separación, visibilidad, símbolos y orden de iconos. Se guardan como preferencias nativas del perfil y se aplican fuera de la nueva pestaña.

@@ -10,11 +10,12 @@ import { integrateUnifiedUi } from './integrate-unified-ui.mjs'
 import { integrateAppearanceApi } from './integrate-appearance-api.mjs'
 import { integrateSidebarIcons } from './integrate-sidebar-icons.mjs'
 import { integrateNativeSettings } from './integrate-native-settings.mjs'
+import { integrateSidebarLayout } from './integrate-sidebar-layout.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
 const component = path.join(source, 'components/brave_extension/extension')
 const destination = path.join(component, 'brave_extension/veyrion_start')
 fs.mkdirSync(destination, { recursive: true })
-const files = ['index.html', 'style.css', 'customization.css', 'unified.css', 'unified.js', 'app.js', 'customization.js', 'model.js', 'web-appearance.js', 'update-core.js', 'updates.js', 'updates-background.js', 'update-config.json', ...[16, 32, 48, 128, 256].map(size => `icons/icon${size}.png`)]
+const files = ['index.html', 'style.css', 'customization.css', 'unified.css', 'home.css', 'live-wallpaper.js', 'unified.js', 'app.js', 'customization.js', 'model.js', 'web-appearance.js', 'update-core.js', 'updates.js', 'updates-background.js', 'update-config.json', ...[16, 32, 48, 128, 256].map(size => `icons/icon${size}.png`)]
 for (const file of files) {
   const target = path.join(destination, file)
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -32,6 +33,8 @@ manifest.background = { scripts: updateScripts, persistent: true }
 if (manifest.MAYBE_background) manifest.MAYBE_background.scripts = [...new Set([...manifest.MAYBE_background.scripts, ...updateScripts])]
 manifest.chrome_url_overrides = { ...manifest.chrome_url_overrides, newtab: 'veyrion_start/index.html' }
 manifest.content_security_policy = manifest.content_security_policy.replace("style-src 'unsafe-inline'", "style-src 'self' 'unsafe-inline'")
+manifest.content_security_policy = manifest.content_security_policy.replace("img-src 'self' data:", "img-src 'self' blob: data:")
+if(!manifest.content_security_policy.includes('media-src'))manifest.content_security_policy += " media-src 'self' blob:;"
 fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
 const grdPath = path.join(component, 'resources.grd')
 let grd = fs.readFileSync(grdPath, 'utf8').replace(/\s*<include name="IDR_VEYRION_[^\n]+\n/g, '\n')
@@ -56,4 +59,5 @@ integrateUnifiedUi(source)
 integrateAppearanceApi(source)
 integrateSidebarIcons(source)
 integrateNativeSettings(source)
+integrateSidebarLayout(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')

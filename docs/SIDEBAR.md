@@ -1,0 +1,19 @@
+# Barra lateral y tableros
+
+El botón de tres puntos situado sobre el engranaje abre únicamente la configuración de la barra lateral en un panel compacto. El engranaje abre la apariencia general del navegador. Los accesos a Descargas y Extensiones se pueden mostrar, ocultar y reordenar junto con los demás iconos.
+
+Favoritos y los paneles web comparten el espacio lateral: al abrir uno se cierra el anterior. Las páginas internas de configuración, descargas y extensiones tienen estilos adaptados a anchos pequeños. Los sitios HTTP/HTTPS nuevos usan vista móvil por defecto; el botón Celular/Escritorio conserva la elección por sitio. La adaptación de sitios externos también depende de su diseño; un sitio sin diseño adaptable puede verse reducido o requerir desplazamiento.
+
+Los tableros de esta versión son ventanas nombradas con conjuntos de pestañas independientes. Puedes crearlos, nombrarlos y cambiar entre ellos desde el panel. Cambiar no cierra ni recarga los demás. Esta implementación difiere de los espacios de Opera GX dentro de una sola ventana. La restauración al reiniciar sigue la opción de inicio y recuperación de ventanas de Chromium; para recuperarlas al abrir, configura la continuación de la sesión anterior en Al inicio. Los tableros no se mezclan con ventanas privadas.
+
+# Inicio y fondos locales
+
+Personalizar inicio permite elegir una imagen PNG/JPEG/WebP/GIF o un vídeo WebM/MP4. Se guarda un archivo en IndexedDB del perfil, sin subirlo a un servidor. El límite es 12 MB y hasta 4K para imágenes; 25 MB y hasta 1080p para vídeo. Se recomienda vídeo corto WebM/MP4 a 24 o 30 fps frente a GIF para reducir el coste de reproducción.
+
+Los vídeos se reproducen sin sonido y se pausan cuando la pestaña queda oculta. Las imágenes animadas pasan a una captura estática al ocultarse o pausarse. El ajuste de movimiento reducido impide la reproducción automática; el usuario puede iniciarla expresamente. Quitar fondo elimina el archivo guardado. El fondo animado se aplica al inicio; no se dibuja sobre las páginas visitadas ni sobre las barras nativas.
+
+La reproducción tiene un coste de CPU/GPU y memoria que depende del archivo y del equipo. No se garantiza impacto cero. Las pausas, los límites y la liberación de recursos al salir evitan mantener decodificadores activos en pestañas ocultas. Las pruebas verifican persistencia, silencio, pausa manual, movimiento reducido y ausencia de avance del vídeo en segundo plano.
+
+# Ventanas con Tor
+
+Se conserva el motor de conexión y el estado real de Tor. La identidad visual del inicio privado es Veyrion. Un estado Desconectada no indica un túnel Tor activo. El buscador Brave Search es un proveedor externo diferente del nombre del navegador. Esta función heredada no equivale al conjunto de protecciones del navegador oficial Tor Browser.

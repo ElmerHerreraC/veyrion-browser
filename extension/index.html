@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veyrion · Nueva pestaña</title><link rel="icon" href="icons/icon32.png"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="customization.css"><link rel="stylesheet" href="unified.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veyrion · Nueva pestaña</title><link rel="icon" href="icons/icon32.png"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="customization.css"><link rel="stylesheet" href="unified.css"><link rel="stylesheet" href="home.css"></head>
 <body>
   <aside class="rail" aria-label="Accesos del navegador">
     <a class="brand" href="#" aria-label="Veyrion"><img src="icons/icon48.png" width="42" height="42" alt="Veyrion"></a>
@@ -12,11 +12,11 @@
     <div class="rail-bottom"><button data-page="settings" title="Ajustes del navegador" aria-label="Ajustes del navegador">⚙</button><button id="customize" title="Personalizar inicio" aria-label="Personalizar inicio">◈</button></div>
   </aside>
   <main>
-    <header><div class="wordmark">VEYRION <span>TU ZONA DE NAVEGACIÓN</span></div><button id="customize-top" class="outline">◈ &nbsp; Configuración rápida</button></header>
+    <header><div class="wordmark"><img src="icons/icon48.png" width="32" height="32" alt="">VEYRION <span>UN ESPACIO PARA TI</span></div><div class="header-actions"><button id="start-customize" class="outline">Personalizar inicio</button><button id="customize-top" class="outline">Configuración del navegador</button></div></header>
     <section class="hero">
       <div class="eyebrow"><span class="live-dot"></span> TU ESPACIO. TUS REGLAS.</div>
-      <h1>Abre otra<br><span>dimensión.</span></h1>
-      <p class="subtitle">La web a tu manera, desde un lugar propio.</p>
+      <h1>¿A dónde vamos?</h1>
+      <p class="subtitle">Tus sitios, tus ideas, tu siguiente paso.</p>
       <form id="search" class="search"><span aria-hidden="true">⌕</span><input id="query" aria-label="Buscar o introducir una dirección" placeholder="Busca algo. Descubre más." autocomplete="off" required><button type="submit" aria-label="Buscar">↗</button></form>
       <div class="search-caption"><span id="engine-label">DuckDuckGo</span><span>BUSCA O ESCRIBE UNA DIRECCIÓN</span></div>
     </section>
@@ -35,7 +35,8 @@
     <label for="ambient">Ambiente</label><select id="ambient"><option value="orbit">Órbita</option><option value="grid">Retícula</option><option value="quiet">Silencio</option></select>
     <label for="engine">Buscador</label><select id="engine"><option value="duckduckgo">DuckDuckGo</option><option value="brave">Brave Search</option><option value="google">Google</option></select>
     <label class="toggle"><input type="checkbox" id="motion"> Animación ambiental</label>
-    <label for="wallpaper">Fondo propio (hasta 3 MB)</label><input id="wallpaper" type="file" accept="image/png,image/jpeg,image/webp"><button id="clear-wallpaper" class="outline">Quitar fondo</button>
+    <label for="live-wallpaper-input">Fondo de imagen o vídeo</label><input id="live-wallpaper-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/webm,video/mp4"><p class="help">Vídeo WebM/MP4 de hasta 25 MB y 1080p; imágenes de hasta 12 MB. El fondo se guarda en este equipo y se pausa al salir de esta pestaña. Para menor consumo, usa vídeo corto a 24/30 fps.</p><p id="wallpaper-media-status" role="status" class="help"></p><button id="pause-wallpaper" class="outline">Pausar fondo</button>
+    <input id="wallpaper" type="file" accept="image/png,image/jpeg,image/webp" hidden><button id="clear-wallpaper" class="outline">Quitar fondo</button>
     <label for="brightness">Luminosidad del fondo</label><input id="brightness" type="range" min="20" max="100" data-setting="brightness">
     <label for="blur">Desenfoque del fondo</label><input id="blur" type="range" min="0" max="20" data-setting="blur">
     <label for="effect">Efecto visual del inicio</label><select id="effect" data-setting="effect"><option value="none">Sin efecto</option><option value="scanlines">Líneas retro</option><option value="vignette">Viñeta</option></select>
@@ -71,4 +72,5 @@
   <script src="update-core.js"></script>
   <script type="module" src="updates.js"></script>
   <script type="module" src="unified.js"></script>
+  <script type="module" src="live-wallpaper.js"></script>
 </body></html>

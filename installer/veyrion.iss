@@ -8,7 +8,7 @@
 [Setup]
 AppId={{6C63BB20-2F16-4AF6-8CED-CBA7E7536C1A}
 AppName=Veyrion
-AppVersion=0.4.1
+AppVersion=0.5.0
 AppPublisher=Veyrion Project
 DefaultDirName={localappdata}\Programs\Veyrion
 DefaultGroupName=Veyrion
@@ -40,18 +40,27 @@ Name: "{autodesktop}\Veyrion"; Filename: "{app}\veyrion.exe"; WorkingDir: "{app}
 Filename: "{app}\veyrion.exe"; Description: "Abrir Veyrion"; Flags: nowait postinstall skipifsilent
 ; User profiles are deliberately not deleted during uninstall.
 [UninstallRun]
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File ""{app}\updater\register.ps1"" -Uninstall"; Flags: runhidden waituntilterminated
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File ""{app}\updater\register.ps1"" -Uninstall"; Flags: runhidden waituntilterminated; RunOnceId: "VeyrionUpdater"
 [Code]
+var ConfigurationFailed: Boolean;
 procedure RunConfiguration(const ScriptName, Extra: String);
 var ResultCode: Integer;
 begin
   if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
     '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' +
     ExpandConstant('{app}\updater\') + ScriptName + '" ' + Extra,
-    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then begin
+    ConfigurationFailed := True;
     RaiseException('No se pudo configurar Veyrion: ' + ScriptName);
-  if ResultCode <> 0 then
+  end;
+  if ResultCode <> 0 then begin
+    ConfigurationFailed := True;
     RaiseException('La configuración de Veyrion falló: ' + ScriptName);
+  end;
+end;
+function GetCustomSetupExitCode(): Integer;
+begin
+  if ConfigurationFailed then Result := 41 else Result := 0;
 end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin

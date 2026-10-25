@@ -51,7 +51,8 @@ $('#preset-vey').addEventListener('click',()=>updatePreferences({themeMode:'dark
 $('#unified-accent').addEventListener('input',event=>updatePreferences({useCustomColor:true,customColor:event.target.value}))
 $('#wallpaper-enabled').addEventListener('change',event=>updatePreferences({wallpaperEnabled:event.target.checked}))
 document.querySelectorAll('button[data-wallpaper-preset]').forEach(button=>button.addEventListener('click',()=>updatePreferences({wallpaperPreset:button.dataset.wallpaperPreset,wallpaper:'',wallpaperEnabled:true})))
-$('#choose-own-wallpaper').addEventListener('click',()=>{advanced.open=true;$('#wallpaper').click()})
+$('#choose-own-wallpaper').textContent='Elegir imagen o vídeo de fondo'
+$('#choose-own-wallpaper').addEventListener('click',()=>{advanced.open=true;$('#live-wallpaper-input').click()})
 icons.querySelectorAll('[data-setting]').forEach(control=>control.addEventListener(control.type==='range'?'input':'change',()=>updatePreferences({[control.dataset.setting]:control.type==='checkbox'?control.checked:Number(control.value)})))
 
 function sync(){

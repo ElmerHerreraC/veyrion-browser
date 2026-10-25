@@ -104,6 +104,7 @@ try {
   Require-Success 'Distribución'
   Set-Stage 'prepare-payload'
   $payload = & (Join-Path $PSScriptRoot 'prepare-payload.ps1') -DistributionDir (Join-Path $BuildRoot 'src\out\Static\dist')
+  & (Join-Path $PSScriptRoot 'configure-sandbox-access.ps1') -InstallDir $payload
   $env:NEBULA_BROWSER_EXE = Join-Path $payload 'veyrion.exe'
   $env:VEYRION_NATIVE_VERIFY = '1'
   Set-Stage 'native-verification'
@@ -114,6 +115,11 @@ try {
   & node (Join-Path $PSScriptRoot 'verify.mjs')
   Remove-Item Env:VEYRION_TEST_EXTENSIONS
   Require-Success 'Prueba de extensión independiente'
+  Set-Stage 'home-verification'
+  $env:VEYRION_HOME_NATIVE = '1'
+  & node (Join-Path $PSScriptRoot 'verify-home.mjs')
+  Require-Success 'Inicio, fondo local y pausa automática'
+  Remove-Item Env:VEYRION_HOME_NATIVE
   Set-Stage 'installer'
   & (Join-Path $PSScriptRoot 'package-native.ps1') -PayloadDir $payload
   Require-Success 'Instalador'

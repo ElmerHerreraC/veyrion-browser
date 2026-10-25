@@ -263,6 +263,36 @@ try {
       await delay(80)
       await panelCall('close',520,true)
     }
+    await panelCall('open',360,true)
+    await panelCall('favorites',360,false)
+    for(let i=0;i<100;i++){const list=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();if(!list.some(t=>t.url===testedPanelUrl))break;await delay(100)}
+    assert.ok(!(await(await fetch(`http://127.0.0.1:${port}/json/list`)).json()).some(t=>t.url===testedPanelUrl),'Favoritos debe sustituir al panel web, sin dejarlo abierto al lado')
+    for(const toolUrl of ['chrome://downloads/','chrome://extensions/','chrome://settings/appearance?veyrionSidebar=1']){
+      await evaluate(`new Promise((resolve,reject)=>chrome.braveTheme.setVeyrionPanel('open',${JSON.stringify(toolUrl)},360,false,()=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve(true)))`)
+      let toolTarget
+      for(let i=0;i<100;i++){toolTarget=(await(await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t=>t.url===toolUrl);if(toolTarget)break;await delay(100)}
+      assert.ok(toolTarget,'Debe abrir el panel '+toolUrl)
+      const ws=new WebSocket(toolTarget.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject})
+      let number=0;const waits=new Map();ws.onmessage=event=>{const message=JSON.parse(event.data);const resolve=waits.get(message.id);if(resolve){waits.delete(message.id);resolve(message)}}
+      const rpc=(method,params={})=>new Promise((resolve,reject)=>{const key=++number;const timer=setTimeout(()=>{waits.delete(key);reject(Error('Internal panel timeout: '+toolUrl+' '+method))},15000);waits.set(key,message=>{clearTimeout(timer);message.error?reject(Error(JSON.stringify(message.error))):resolve(message.result)});ws.send(JSON.stringify({id:key,method,params}))})
+      try{
+        await rpc('Page.bringToFront')
+        const expression=toolUrl.includes('veyrionSidebar')?`(()=>{const find=root=>root.querySelector('veyrion-native-appearance')||[...root.querySelectorAll('*')].map(e=>e.shadowRoot&&find(e.shadowRoot)).find(Boolean);const appearance=find(document);return !!appearance?.shadowRoot?.querySelector('#icons .row')})()`:'document.readyState === "complete"'
+        let loaded=false
+        for(let i=0;i<100;i++){const result=await rpc('Runtime.evaluate',{expression,returnByValue:true});if(result.result.value){loaded=true;break}await delay(100)}
+        assert.ok(loaded,'Debe terminar de cargar '+toolUrl)
+        const size=(await rpc('Runtime.evaluate',{expression:'({width:innerWidth,scroll:document.documentElement.scrollWidth})',returnByValue:true})).result.value
+        assert.ok(size.scroll<=size.width+2,`El panel interno no debe desbordar: ${toolUrl} ${JSON.stringify(size)}`)
+        if(toolUrl.includes('veyrionSidebar')){
+          const content=(await rpc('Runtime.evaluate',{expression:`(()=>{const find=root=>root.querySelector('veyrion-native-appearance')||[...root.querySelectorAll('*')].map(e=>e.shadowRoot&&find(e.shadowRoot)).find(Boolean);const host=find(document);return {width:host.getBoundingClientRect().width,scroll:host.shadowRoot.querySelector('#workspace-name').getBoundingClientRect().right}})()`,returnByValue:true})).result.value
+          assert.ok(content.width<=size.width&&content.scroll<=size.width,`El formulario lateral debe caber completamente: ${JSON.stringify(content)} / ${size.width}`)
+        }
+        const shot=await rpc('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})
+        await fs.writeFile(path.join(root,'artifacts/panel-'+(toolUrl.includes('downloads')?'downloads':toolUrl.includes('extensions')?'extensions':'options')+'-050.png'),Buffer.from(shot.data,'base64'))
+      }finally{ws.close()}
+      await evaluate(`new Promise(resolve=>chrome.braveTheme.setVeyrionPanel('close',${JSON.stringify(toolUrl)},360,false,resolve))`)
+    }
+    await cdp('Page.bringToFront')
     await evaluate(`import('./app.js').then(module=>module.updatePreferences({webEffect:'warm',frameStyle:'glass',tileSize:180,interfaceFont:'mono'}))`)
     assert.equal(await evaluate('document.body.dataset.frameStyle'),'glass')
     assert.equal(await evaluate('document.body.dataset.interfaceFont'),'mono')
@@ -328,6 +358,15 @@ try {
       await delay(100)
     }
     assert.ok(nativeSettings,'La apariencia debe estar implementada dentro de la configuración nativa')
+    const spacesBefore=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{}))`)
+    const visibleSpaceName=await evaluate(`(()=>{const find=root=>root.querySelector('veyrion-native-appearance')||[...root.querySelectorAll('*')].map(e=>e.shadowRoot&&find(e.shadowRoot)).find(Boolean);return find(document).shadowRoot.querySelector('#workspaces button[aria-pressed=true]')?.textContent||''})()`)
+    assert.ok(visibleSpaceName&&!visibleSpaceName.includes(String(spacesBefore.workspaces.find(space=>space.current).id)),'Los tableros deben mostrar un nombre legible, sin identificadores internos')
+    const spacesAfter=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{workspaceAction:'create',name:'Estudio de prueba'}))`)
+    assert.equal(spacesAfter.workspaces.length,spacesBefore.workspaces.length+1,'Un tablero debe conservar sus pestañas en un espacio adicional')
+    assert.ok(spacesAfter.workspaces.some(space=>space.name==='Estudio de prueba'&&space.tabs>=1))
+    const originalSpace=spacesBefore.workspaces.find(space=>space.current)
+    await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{workspaceAction:'activate',id:${originalSpace.id}}))`)
+    await cdp('Page.bringToFront')
     for (const enabled of [false, true, false]) {
       const dark = await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{forceDark:${enabled}}))`)
       assert.equal(dark.forceDark, enabled, 'El modo oscuro web debe poder activarse y desactivarse')
@@ -380,7 +419,7 @@ try {
     assert.equal(saved.brave?.sidebar?.sidebar_show_option, 0, 'La barra nativa debe permanecer visible al navegar')
     assert.equal(saved.veyrion?.desktop_layout_version, 1, 'La migración de interfaz debe persistirse una sola vez')
     const panelData = JSON.stringify(saved.brave?.sidebar?.sidebar_items)
-    assert.equal(saved.veyrion?.panel_width,520,'El ancho del panel debe persistir')
+    assert.equal(saved.veyrion?.panel_width,360,'El último ancho elegido para el panel debe persistir')
     assert.equal(saved.veyrion?.mobile_panels?.[testedPanelUrl],true,'La vista móvil debe guardarse por dirección')
     assert.ok(panelData.includes(testedPanelUrl),'La página personalizada debe guardarse en la barra')
     for (const host of ['web.whatsapp.com', 'web.telegram.org', 'discord.com', 'twitch.tv', 'open.spotify.com']) assert.ok(panelData.includes(host), 'Debe guardarse el panel de ' + host)

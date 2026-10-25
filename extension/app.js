@@ -35,6 +35,10 @@ function apply() {
   const [accent, rgb] = state.useCustomColor ? [state.customColor, [1, 3, 5].map(i => parseInt(state.customColor.slice(i, i + 2), 16)).join(',')] : colors[state.accent]
   document.documentElement.style.setProperty('--accent', accent)
   document.documentElement.style.setProperty('--rgb', rgb)
+  let readable=rgb.split(',').map(Number)
+  const luminance=value=>value.map(channel=>{const linear=channel/255;return linear<=.04045?linear/12.92:((linear+.055)/1.055)**2.4}).reduce((sum,channel,index)=>sum+channel*[.2126,.7152,.0722][index],0)
+  for(let step=0;step<20&&luminance(readable)<.28;step++)readable=readable.map(channel=>Math.round(channel+(255-channel)*.12))
+  document.documentElement.style.setProperty('--home-accent',`rgb(${readable.join(',')})`)
   document.body.dataset.ambient = state.ambient
   document.body.dataset.density = state.density
   document.body.dataset.effect = state.effect
@@ -70,6 +74,9 @@ function renderLinks() {
     const icon = document.createElement('span')
     icon.className = 'letter'
     icon.textContent = item.title.slice(0, 1).toUpperCase()
+    const host=new URL(anchor.href).hostname.replace(/^www\./,'')
+    const glyphs={'youtube.com':'M4 5h16v14H4z M10 9l5 3-5 3z','github.com':'m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 20','twitch.tv':'M4 3h17v13l-6 5h-5v-4H4z M10 7v6m5-6v6','discord.com':'M8 7h8l4 11-5-2-3 2-3-2-5 2z M9 11v2m6-2v2'}
+    if(glyphs[host]){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',glyphs[host]);svg.append(path);icon.replaceChildren(svg)}
     const label = document.createElement('span')
     label.textContent = item.title.slice(0, 30)
     anchor.append(icon, label)
