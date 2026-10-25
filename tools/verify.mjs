@@ -231,6 +231,15 @@ try {
         await delay(100)
       }
       assert.ok(mobile,'La vista móvil debe enviar un agente móvil y cargar la página')
+      await panelEvaluate('globalThis.veyrionPanelContinuity = "kept"; document.querySelector("#test-input").value="Texto sin perder"; true')
+      const temporaryTab=await evaluate('chrome.tabs.create({url:"about:blank",active:true}).then(tab=>tab.id)')
+      await delay(350)
+      await cdp('Page.bringToFront')
+      await delay(350)
+      assert.equal(await panelEvaluate('globalThis.veyrionPanelContinuity'), 'kept','Cambiar de pestaña debe conservar el mismo documento lateral')
+      assert.equal(await panelEvaluate('document.querySelector("#test-input").value'),'Texto sin perder','El panel debe conservar el texto al cambiar de pestaña')
+      assert.ok((await panelPixelWidth())>=240,'La superficie lateral debe seguir visible tras cambiar de pestaña')
+      await evaluate(`chrome.tabs.remove(${temporaryTab})`)
       if(process.env.VEYRION_WINDOWED_VERIFY==='1')await new Promise((resolve,reject)=>{
         const id=++panelSequence
         const timer=setTimeout(()=>{panelRequests.delete(id);reject(new Error('Panel activation timeout'))},15000)
@@ -265,8 +274,10 @@ try {
     }
     await panelCall('open',360,true)
     await panelCall('favorites',360,false)
-    for(let i=0;i<100;i++){const list=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();if(!list.some(t=>t.url===testedPanelUrl))break;await delay(100)}
-    assert.ok(!(await(await fetch(`http://127.0.0.1:${port}/json/list`)).json()).some(t=>t.url===testedPanelUrl),'Favoritos debe sustituir al panel web, sin dejarlo abierto al lado')
+    assert.ok((await(await fetch(`http://127.0.0.1:${port}/json/list`)).json()).some(t=>t.id===panelTarget.id),'Favoritos debe ocultar el panel web y conservarlo en segundo plano')
+    await panelCall('open',360,true)
+    assert.ok((await(await fetch(`http://127.0.0.1:${port}/json/list`)).json()).some(t=>t.id===panelTarget.id),'Volver a un panel debe reutilizar el mismo documento')
+    await panelCall('close',360,true)
     for(const toolUrl of ['chrome://downloads/','chrome://extensions/','chrome://settings/appearance?veyrionSidebar=1']){
       await evaluate(`new Promise((resolve,reject)=>chrome.braveTheme.setVeyrionPanel('open',${JSON.stringify(toolUrl)},360,false,()=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve(true)))`)
       let toolTarget
@@ -358,6 +369,12 @@ try {
       await delay(100)
     }
     assert.ok(nativeSettings,'La apariencia debe estar implementada dentro de la configuración nativa')
+    const localUpdate=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{updateAction:'status'}))`)
+    assert.equal(typeof localUpdate.state,'string','Configuración debe consultar el estado del actualizador sin ejecutar una consola')
+    for(const autoPip of [false,true]){
+      const result=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{autoPip:${autoPip}}))`)
+      assert.equal(result.autoPip,autoPip,'El minirreproductor automático debe poder desactivarse y activarse')
+    }
     const spacesBefore=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{}))`)
     const visibleSpaceName=await evaluate(`(()=>{const find=root=>root.querySelector('veyrion-native-appearance')||[...root.querySelectorAll('*')].map(e=>e.shadowRoot&&find(e.shadowRoot)).find(Boolean);return find(document).shadowRoot.querySelector('#workspaces button[aria-pressed=true]')?.textContent||''})()`)
     assert.ok(visibleSpaceName&&!visibleSpaceName.includes(String(spacesBefore.workspaces.find(space=>space.current).id)),'Los tableros deben mostrar un nombre legible, sin identificadores internos')

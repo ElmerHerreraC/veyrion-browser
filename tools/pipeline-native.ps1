@@ -120,6 +120,9 @@ try {
   & node (Join-Path $PSScriptRoot 'verify-home.mjs')
   Require-Success 'Inicio, fondo local y pausa automática'
   Remove-Item Env:VEYRION_HOME_NATIVE
+  Set-Stage 'miniplayer-verification'
+  & node (Join-Path $PSScriptRoot 'verify-pip.mjs')
+  Require-Success 'Minirreproductor automático con vídeo local'
   Set-Stage 'installer'
   & (Join-Path $PSScriptRoot 'package-native.ps1') -PayloadDir $payload
   Require-Success 'Instalador'

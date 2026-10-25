@@ -3,7 +3,7 @@ export const defaults = {
   notes: '', wallpaper: '', customColor: '#a48bff', useCustomColor: false,
   brightness: 70, blur: 0, density: 'comfortable', effect: 'none',
   sounds: false, soundPack: 'glass', volume: 25, music: false,
-  showNotes: true, showClock: true, showSidebar: false, syncNativeTheme: true,
+  showNotes: true, showClock: true, showRecent: true, showSidebar: false, syncNativeTheme: true,
   frameStyle: 'angular', tileSize: 140, interfaceFont: 'system', panelOpacity: 85,
   webEffect: 'none', webSounds: false,
   themeMode: 'dark', sidebarIconSize: 20, sidebarSpacing: 3, sidebarColoredIcons: true,
@@ -48,10 +48,10 @@ export function normalize(raw = {}) {
   value.notes = typeof value.notes === 'string' ? value.notes.slice(0, 12000) : ''
   value.motion = value.motion === true
   for (const key of ['sounds', 'music', 'useCustomColor']) value[key] = value[key] === true
-  for (const key of ['showNotes', 'showClock', 'showSidebar']) value[key] = value[key] !== false
+  for (const key of ['showNotes', 'showClock', 'showSidebar','showRecent']) value[key] = value[key] !== false
   value.syncNativeTheme = true
   if (!['dark','light','system'].includes(value.themeMode)) value.themeMode = 'dark'
-  if (!['none','waves','orbit','grid'].includes(value.wallpaperPreset)) value.wallpaperPreset = 'waves'
+  if (!['none','waves','orbit','grid','mountains','coast','planet','nebula'].includes(value.wallpaperPreset)) value.wallpaperPreset = 'waves'
   value.wallpaperEnabled = value.wallpaperEnabled !== false
   value.sidebarColoredIcons = value.sidebarColoredIcons !== false
   for (const [key,min,max] of [['sidebarIconSize',14,26],['sidebarSpacing',0,10]]) value[key] = Number.isFinite(Number(value[key])) ? Math.min(max,Math.max(min,Number(value[key]))) : defaults[key]

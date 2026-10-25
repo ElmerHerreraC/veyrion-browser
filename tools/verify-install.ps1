@@ -31,7 +31,7 @@ $env:NEBULA_BROWSER_EXE = $installedExe
 & (Join-Path $PSScriptRoot 'configure-sandbox-access.ps1') -InstallDir $installedDir -VerifyOnly
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $updateTask = Get-ScheduledTask -TaskName ('VeyrionUpdate-' + $identity)
-if ($updateTask.State -eq 'Disabled' -or $updateTask.Actions.Arguments -notlike '*\Veyrion\updater\update.ps1*') { throw 'El actualizador automático no está habilitado.' }
+if ($updateTask.State -eq 'Disabled' -or $updateTask.Actions.Execute -ine (Join-Path $installedDir 'updater\VeyrionUpdate.exe') -or $updateTask.Actions.Arguments -ne 'check') { throw 'El actualizador sin consola no está habilitado.' }
 $updateConfig = Get-Content -LiteralPath (Join-Path $installedDir 'updater\config.json') -Raw | ConvertFrom-Json
 $expectedVersion = (Get-Content -LiteralPath (Join-Path $project 'package.json') -Raw | ConvertFrom-Json).version
 if ($updateConfig.version -ne $expectedVersion) { throw 'El actualizador tiene otra versión instalada.' }

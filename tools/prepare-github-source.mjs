@@ -11,7 +11,7 @@ function visit(relative) {
     for (const name of fs.readdirSync(target).sort()) visit(path.posix.join(relative, name))
     return
   }
-  if (relative === 'config/build-machine.json' || /\.(pem|key|lnk)$/i.test(relative)) return
+  if (relative === 'config/build-machine.json' || /\.(pem|key|lnk|exe)$/i.test(relative)) return
   if (stat.size > 200000) throw new Error('Archivo demasiado grande para el paquete de código: ' + relative)
   const data = fs.readFileSync(target)
   if (/\.(png|ico)$/i.test(relative)) files.push({ path: relative, encoding: 'base64', content: data.toString('base64') })

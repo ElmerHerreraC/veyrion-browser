@@ -1,7 +1,7 @@
 import {sendWithPromise as veyrionSend} from 'chrome://resources/js/cr.js'
 
 interface VeyrionAppearance {
-  mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean;
+  mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean; autoPip: boolean;
   items: Array<{index: number; title: string; visible: boolean; icon: string}>;
   workspaces: Array<{id:number; name:string; tabs:number; current:boolean}>;
 }
@@ -60,6 +60,15 @@ class VeyrionNativeAppearance extends HTMLElement {
       this.save_()
     })
     this.root_.getElementById('force-dark')!.addEventListener('change',()=>this.request_({forceDark:(this.root_.getElementById('force-dark') as HTMLInputElement).checked}))
+    const video=document.createElement('label');video.className='row general';video.textContent='Minirreproductor automático al cambiar de pestaña'
+    const autoPip=document.createElement('input');autoPip.type='checkbox';autoPip.id='auto-pip';autoPip.addEventListener('change',()=>this.request_({autoPip:autoPip.checked}));video.append(autoPip)
+    this.root_.getElementById('force-dark')!.closest('.card')!.append(video)
+    const updates=document.createElement('div');updates.className='card general';updates.id='updates';updates.appendChild(braveHtml`<h2>ACTUALIZACIONES DE VEYRION</h2><p id="update-state" role="status">Consultando estado local…</p><p>Las comprobaciones se realizan sin ventanas de consola. Pulsa Actualizar para descargar la versión firmada e instalarla cuando cierres Veyrion.</p><div class="row"><button class="arrow" id="update-check">Buscar actualizaciones</button><button class="arrow" id="update-apply" hidden>Actualizar al cerrar</button><a href="https://github.com/ElmerHerreraC/veyrion-browser/releases" target="_blank" rel="noreferrer">Ver novedades</a></div>`)
+    this.root_.append(updates)
+    for(const action of ['check','apply'])this.root_.getElementById('update-'+action)!.addEventListener('click',()=>this.updateStatus_(action))
+    this.updateStatus_('status')
+    this.updateTimer_=window.setInterval(()=>this.updateStatus_('status'),10000)
+    if(new URLSearchParams(location.search).has('veyrionUpdates'))setTimeout(()=>updates.scrollIntoView({block:'start'}),400)
     if(sidebarOnly){this.classList.add('sidebar-only');this.root_.querySelector('.heading')!.textContent='CONFIGURACIÓN DE LA BARRA LATERAL';this.root_.querySelector('p')!.textContent='Elige accesos, ajusta iconos y cambia de tablero.'}
     for(const action of ['create','rename'])this.root_.getElementById('workspace-'+action)!.addEventListener('click',()=>{
       const name=(this.root_.getElementById('workspace-name') as HTMLInputElement).value.trim()
@@ -69,6 +78,17 @@ class VeyrionNativeAppearance extends HTMLElement {
     this.request_({})
   }
   private save_(){window.clearTimeout(this.timer_);this.timer_=window.setTimeout(()=>{if(this.state_)this.request_({mode:this.state_.mode,color:this.state_.color,size:this.state_.size,spacing:this.state_.spacing,colored:this.state_.colored})},150)}
+  private updateTimer_: number|undefined
+  disconnectedCallback(){window.clearInterval(this.updateTimer_);window.clearTimeout(this.timer_)}
+  private async updateStatus_(action:string){
+    try{
+      const value=await veyrionSend<{state:string;detail?:string;installed?:string;checkedAt?:string}>('veyrionAppearance',{updateAction:action})
+      const messages:Record<string,string>={current:'Estás al día.',available:'Nueva versión '+(value.detail||'')+' disponible.',downloading:'Descargando y verificando la actualización…','ready-on-close':'Actualización lista. Cierra Veyrion cuando quieras instalarla.',installed:'Actualización instalada.',checking:'Buscando actualizaciones…',starting:'Preparando actualización…',error:'No se pudo completar la actualización. Puedes volver a intentarlo.',unchecked:'Todavía no hay una comprobación registrada.'}
+      this.root_.getElementById('update-state')!.textContent='Versión instalada: '+(value.installed||'—')+'. '+(messages[value.state]||value.state)+(value.checkedAt?' Última comprobación: '+new Date(value.checkedAt).toLocaleString()+'.':'')
+      ;(this.root_.getElementById('update-apply') as HTMLButtonElement).hidden=value.state!=='available'
+      ;(this.root_.getElementById('update-check') as HTMLButtonElement).disabled=['checking','starting','downloading','ready-on-close'].includes(value.state)
+    }catch{this.root_.getElementById('update-state')!.textContent='No se pudo consultar el estado local. Abre una ventana normal del navegador.'}
+  }
   private async request_(request: object){
     try{this.state_=await veyrionSend<VeyrionAppearance>('veyrionAppearance',request);this.render_();this.root_.getElementById('status')!.textContent='Guardado en el perfil. Aplicado a toda la ventana del navegador.'}
     catch{this.root_.getElementById('status')!.textContent='No se pudieron aplicar los cambios. Inténtalo de nuevo.'}
@@ -83,6 +103,7 @@ class VeyrionNativeAppearance extends HTMLElement {
     for(const id of ['size','spacing'] as const)(this.root_.getElementById(id) as HTMLInputElement).value=String(state[id])
     ;(this.root_.getElementById('colored') as HTMLInputElement).checked=state.colored
     ;(this.root_.getElementById('force-dark') as HTMLInputElement).checked=state.forceDark
+    ;(this.root_.getElementById('auto-pip') as HTMLInputElement).checked=state.autoPip
     const list=this.root_.getElementById('icons')!;list.replaceChildren()
     for(const item of state.items){
       const row=document.createElement('div');row.className='row'

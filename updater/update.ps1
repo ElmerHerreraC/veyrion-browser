@@ -1,3 +1,4 @@
+param([switch]$Apply)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'policy.ps1')
 $installDir = Split-Path -Parent $PSScriptRoot
@@ -42,6 +43,8 @@ try {
   Save-BoundedDownload $config.manifestUrl $manifestPath 20000
   $manifest = Read-UpdateManifest (Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json) $config
   if ([Version]$manifest.version -le [Version]$config.version) { Write-UpdateStatus 'current' $config.version; exit 0 }
+  # Background checks only announce a verified version. The browser owns consent.
+  if (!$Apply) { Write-UpdateStatus 'available' $manifest.version; exit 0 }
   $installer = Join-Path $cache ('Veyrion-' + $manifest.version + '-Setup-x64.exe')
   $valid = $false
   if (Test-Path -LiteralPath $installer) {

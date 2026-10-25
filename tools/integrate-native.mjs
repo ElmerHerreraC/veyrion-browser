@@ -11,11 +11,13 @@ import { integrateAppearanceApi } from './integrate-appearance-api.mjs'
 import { integrateSidebarIcons } from './integrate-sidebar-icons.mjs'
 import { integrateNativeSettings } from './integrate-native-settings.mjs'
 import { integrateSidebarLayout } from './integrate-sidebar-layout.mjs'
+import { integrateExperience } from './integrate-experience.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
 const component = path.join(source, 'components/brave_extension/extension')
 const destination = path.join(component, 'brave_extension/veyrion_start')
 fs.mkdirSync(destination, { recursive: true })
 const files = ['index.html', 'style.css', 'customization.css', 'unified.css', 'home.css', 'live-wallpaper.js', 'unified.js', 'app.js', 'customization.js', 'model.js', 'web-appearance.js', 'update-core.js', 'updates.js', 'updates-background.js', 'update-config.json', ...[16, 32, 48, 128, 256].map(size => `icons/icon${size}.png`)]
+files.push('home-extras.js',...['mountains','coast','planet','nebula'].map(name=>'wallpapers/'+name+'.svg'))
 for (const file of files) {
   const target = path.join(destination, file)
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -60,4 +62,5 @@ integrateAppearanceApi(source)
 integrateSidebarIcons(source)
 integrateNativeSettings(source)
 integrateSidebarLayout(source)
+integrateExperience(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')
