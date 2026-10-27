@@ -24,6 +24,7 @@ child.on('exit', (code,signal) => { if(process.env.VEYRION_VERIFY_TRACE==='1') c
 child.on('error', error => console.error(error.message))
 let socket
 let tlsServer
+let dragServiceOrder
 let sequence = 0
 const pending = new Map()
 const testServer = createServer((request, response) => {
@@ -439,6 +440,22 @@ try {
     }
     assert.ok(systemReady,'La configuración del sistema debe cargar')
     assert.ok(await evaluate(`(()=>{const scan=root=>!root.querySelector('settings-brave-origin-onboarding')&&[...root.querySelectorAll('*')].every(e=>!e.shadowRoot||scan(e.shadowRoot));return scan(document)})()`),'La promoción de Brave Origin debe estar retirada del sistema')
+    if(process.env.VEYRION_DRAG_VERIFY==='1'){
+      assert.equal(process.env.VEYRION_WINDOWED_VERIFY,'1','El arrastre se prueba en una ventana real');
+      const before=await evaluate("import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{mode:'dark',size:20,spacing:10,colored:true,color:0xd2d2d2}))");
+      assert.equal(before.spacing,10,'La prueba debe aplicar una separación amplia');
+      const services=['WhatsApp','Telegram','Discord','Twitch','Spotify'];
+      const serviceOrder=state=>state.items.map(item=>item.title).filter(title=>services.includes(title));
+      await fs.writeFile(path.join(root,'artifacts/drag-ready.json'),JSON.stringify({profile,version:releaseVersion,before:serviceOrder(before)}));
+      console.log('DRAG READY: '+path.join(profile,'continue-drag'));
+      let completed=false;
+      for(let i=0;i<960;i++){assert.equal(child.exitCode,null,'El navegador debe seguir abierto durante el arrastre');try{await fs.access(path.join(profile,'continue-drag'));completed=true;break}catch{}await delay(250)}
+      assert.ok(completed,'La prueba de arrastre debe completarse');
+      const after=await evaluate("import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{}))");
+      dragServiceOrder=serviceOrder(after);
+      assert.notDeepEqual(dragServiceOrder,serviceOrder(before),'El arrastre debe cambiar realmente el orden');
+      await evaluate("import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{mode:'dark',size:20,spacing:3,colored:true,color:0xd2d2d2}))");
+    }
     const stabilitySeconds=Number(process.env.VEYRION_STABILITY_SECONDS)||0
     if(stabilitySeconds>0){const deadline=Date.now()+stabilitySeconds*1000;console.log(`Estabilidad: ${stabilitySeconds}s de reposo con sandbox activo`);while(Date.now()<deadline){assert.equal(child.exitCode,null,'El navegador debe permanecer abierto en reposo');await evaluate('document.readyState');await delay(2000)}}
     try { await cdp('Browser.close') } catch {}
@@ -450,6 +467,11 @@ try {
     assert.equal(saved.side_panel?.is_right_aligned, false, 'La barra nativa debe estar alineada a la izquierda')
     assert.equal(saved.brave?.sidebar?.sidebar_show_option, 0, 'La barra nativa debe permanecer visible al navegar')
     assert.equal(saved.veyrion?.desktop_layout_version, 1, 'La migración de interfaz debe persistirse una sola vez')
+    if(dragServiceOrder){
+      const persisted=saved.brave.sidebar.sidebar_items.map(item=>item.title).filter(title=>dragServiceOrder.includes(title));
+      assert.deepEqual(persisted,dragServiceOrder,'El orden arrastrado debe persistir al cerrar');
+      await fs.writeFile(path.join(root,'artifacts/sidebar-drag-verification-'+releaseVersion.replaceAll('.','')+'.json'),JSON.stringify({passed:true,version:releaseVersion,customSpacing:10,reordered:true,persisted:true,cleanExit:true}));
+    }
     const panelData = JSON.stringify(saved.brave?.sidebar?.sidebar_items)
     assert.equal(saved.veyrion?.panel_width,360,'El último ancho elegido para el panel debe persistir')
     assert.equal(saved.veyrion?.mobile_panels?.[testedPanelUrl],true,'La vista móvil debe guardarse por dirección')

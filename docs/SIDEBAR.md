@@ -31,3 +31,5 @@ El primer inicio ofrece importar datos, cambiar nombre y foto del perfil y gesti
 Google se selecciona una vez como buscador de inicio, ventanas normales y privadas; después se conserva la elección del usuario. Tor mantiene su configuración separada. El botón de medio círculo del lateral alterna el mismo modo oscuro forzado de Aspecto visual. Los sitios añadidos al panel reciben inicialmente protección nativa activa con filtrado agresivo; los cambios posteriores por sitio se respetan. No se garantiza eliminar todos los anuncios de YouTube.
 
 La caché experimental DAT de filtros queda desactivada: en un perfil nuevo su espera del catálogo impedía cargar incluso los filtros personalizados. El bloqueo sigue usando el motor nativo; las pruebas no desactivan Shields. Las listas descargadas se vuelven a procesar al iniciar.
+
+En 0.7.1, el destino del arrastre se calcula por los puntos medios verticales, incluyendo los espacios entre iconos y después del último. El cálculo anterior terminaba en una comprobación fatal al salir de los rectángulos de los botones; el volcado de Windows confirmó esa ruta.

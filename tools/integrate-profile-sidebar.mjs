@@ -115,4 +115,28 @@ export function integrateProfileSidebar(source){
     configured->Set(origin, true);
   }
   auto cached = veyrion_cached_panels_.find(item.url.spec());`))
+  // Veyrion drag insertion boundaries include custom spacing and empty space.
+  edit('browser/ui/views/sidebar/sidebar_items_contents_view.cc',s=>{
+    const name=s.indexOf('SidebarItemsContentsView::CalculateTargetDragIndicatorIndex(');
+    const start=s.lastIndexOf('std::optional<size_t>',name);
+    const end=s.indexOf('std::optional<size_t> SidebarItemsContentsView::DrawDragIndicator(',name);
+    if(name<0||start<0||end<0)throw Error('No se encontró el cálculo nativo del destino de arrastre');
+    return s.slice(0,start)+`std::optional<size_t>
+SidebarItemsContentsView::CalculateTargetDragIndicatorIndex(
+    const gfx::Point& screen_position) {
+  // Insertion positions cover gaps, hidden items and space after the last icon.
+  if (children().empty()) return std::nullopt;
+  for (size_t i = 0; i < children().size(); ++i) {
+    views::View* child = children()[i];
+    if (!child->GetVisible()) continue;
+    auto bounds = child->GetLocalBounds();
+    views::View::ConvertRectToScreen(child, &bounds);
+    if (screen_position.y() < bounds.CenterPoint().y()) return i;
+  }
+  return children().size();
+}
+
+`+s.slice(end);
+  })
+
 }
