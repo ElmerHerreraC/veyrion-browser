@@ -67,6 +67,7 @@ void BraveAppearanceHandler::HandleVeyrionAppearance(const base::ListValue& args
       const auto* name = request.FindString("name");
       if (!name || name->empty() || name->size() > 180) { fail(); return; }
       WindowMetadataController::From(current_window)->SetWindowUserTitle(*name);
+      prefs->SetInteger("veyrion.workspace_revision", prefs->GetInteger("veyrion.workspace_revision") + 1);
     } else if (*action == "activate") {
       const auto id = request.FindInt("id");
       bool found = false;

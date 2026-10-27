@@ -8,7 +8,7 @@
 [Setup]
 AppId={{6C63BB20-2F16-4AF6-8CED-CBA7E7536C1A}
 AppName=Veyrion
-AppVersion=0.6.0
+AppVersion=0.7.0
 AppPublisher=Veyrion Project
 DefaultDirName={localappdata}\Programs\Veyrion
 DefaultGroupName=Veyrion
@@ -37,7 +37,7 @@ Source: "..\tools\configure-sandbox-access.ps1"; DestDir: "{app}\updater"; Flags
 Name: "{group}\Veyrion"; Filename: "{app}\veyrion.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Veyrion.ico"
 Name: "{autodesktop}\Veyrion"; Filename: "{app}\veyrion.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Veyrion.ico"; Tasks: desktopicon
 [Run]
-Filename: "{app}\veyrion.exe"; Description: "Abrir Veyrion"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\veyrion.exe"; Description: "Abrir Veyrion y configurar perfil, importación y sincronización"; Flags: nowait postinstall skipifsilent
 ; User profiles are deliberately not deleted during uninstall.
 [UninstallRun]
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File ""{app}\updater\register.ps1"" -Uninstall"; Flags: runhidden waituntilterminated; RunOnceId: "VeyrionUpdater"

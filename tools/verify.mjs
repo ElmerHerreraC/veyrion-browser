@@ -13,6 +13,7 @@ const testExtensions = process.env.VEYRION_TEST_EXTENSIONS === '1'
 const releaseVersion = JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).version
 const loadExtensions = [...(!native ? [path.join(root, 'extension')] : []), ...(testExtensions ? [path.join(root, 'tests/fixture-extension')] : [])]
 await fs.mkdir(profile, { recursive: true })
+if(native){await fs.mkdir(path.join(profile,'Default'),{recursive:true});await fs.writeFile(path.join(profile,'Local State'),JSON.stringify({brave:{ad_block:{custom_filters:'/veyrion-ad-fixture.js^'}}}))}
 await fs.mkdir(path.join(root, 'artifacts'), { recursive: true })
 const child = spawn(executable, [
   ...(process.env.VEYRION_WINDOWED_VERIFY === '1' ? ['--window-size=1500,1000'] : ['--headless=new']), '--remote-debugging-port=0', `--user-data-dir=${profile}`,
@@ -82,6 +83,11 @@ try {
     await delay(100)
   }
   assert.ok(ready, 'La extensión debe reemplazar la nueva pestaña y cargar sus módulos')
+  for(let i=0;i<150;i++){if(await evaluate('document.body.dataset.onboardingReady === "true"'))break;await delay(100)}
+  assert.ok(await evaluate('document.body.dataset.onboardingReady === "true"'),'El asistente de perfil debe cargar');
+  assert.ok(await evaluate('!document.querySelector("footer").textContent.includes("ESPACIO PERSONAL")'));
+  await evaluate('document.querySelector("#onboarding-done").click()');
+
   for(const width of (process.env.VEYRION_WINDOWED_VERIFY==='1'?[null]:[1920,1440])){
     if(width)await cdp('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false})
     const alignment=await evaluate(`(()=>{const rect=document.querySelector('main').getBoundingClientRect();return Math.abs(rect.x+rect.width/2-innerWidth/2)})()`)
@@ -231,6 +237,10 @@ try {
         await delay(100)
       }
       assert.ok(mobile,'La vista móvil debe enviar un agente móvil y cargar la página')
+      let adBlocked=false;
+      for(let attempt=0;attempt<80;attempt++){adBlocked=await panelEvaluate("fetch('/veyrion-ad-fixture.js?attempt="+attempt+"',{cache:'no-store'}).then(()=>false,()=>true)");if(adBlocked)break;await delay(250)}
+      assert.equal(adBlocked,true,'El motor de bloqueo debe proteger las solicitudes del panel lateral');
+      assert.equal(await panelEvaluate("fetch('/allowed-panel-resource').then(r=>r.ok)"),true,'El panel debe permitir solicitudes normales');
       await panelEvaluate('globalThis.veyrionPanelContinuity = "kept"; document.querySelector("#test-input").value="Texto sin perder"; true')
       const temporaryTab=await evaluate('chrome.tabs.create({url:"about:blank",active:true}).then(tab=>tab.id)')
       await delay(350)
@@ -350,6 +360,11 @@ try {
       await delay(100)
     }
     assert.ok(settingsReady,'Los ajustes deben cargar con los recursos nuevos')
+    const defaultSearch=await evaluate("chrome.settingsPrivate.getPref('default_search_provider_data.template_url_data').then(pref=>pref.value)");
+    assert.ok(defaultSearch.short_name==='Google' && /(?:\{google:baseURL\}|https:\/\/(?:www\.)?google\.)/.test(defaultSearch.url),'El buscador nativo normal debe ser Google');
+    const privateSearch=await evaluate("import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('getPrivateSearchEnginesList'))");
+    assert.ok(privateSearch.some(engine=>engine.default && /(?:\{google:baseURL\}|https:\/\/(?:www\.)?google\.)/.test(engine.url)),'El buscador privado debe ser Google');
+
     let ownHeader=false
     for(let i=0;i<50;i++){
       ownHeader=await evaluate('Boolean(document.querySelector("settings-ui")?.shadowRoot?.querySelector("cr-toolbar img[slot=product-logo][alt=Veyrion]")?.naturalWidth)')
@@ -443,8 +458,9 @@ try {
   }
   const report = { passed: true, browser: executable, extension_url: url, checks: [native ? 'Inicio integrado en binario propio sin extensión externa' : 'MV3 cargado en Brave', 'Nueva pestaña sustituida', 'Nombre Veyrion', 'Presets visuales y sonoros', 'Densidad y visibilidad', 'Importación de mod y validación de valores', 'Cambio de acento', 'Persistencia tras recarga', 'Añadir y quitar acceso', 'Navegación HTTP y JavaScript', 'APIs de extensión aisladas de páginas web', 'Gestor nativo de extensiones disponible'], native_build_verified: native }
   if (testExtensions) report.checks.push('Instalación y ejecución de extensión MV3 independiente sin permisos adicionales')
+  if (native) report.checks.push('Google predeterminado normal y privado; bloqueo de solicitud publicitaria del panel sin impedir recursos normales; asistente de perfil cargado')
   if (native) report.checks.push('Color aplicado al tema nativo de pestañas y barra; valores fuera de rango rechazados')
-  if (native) report.checks.push('Barra nativa izquierda persistente con paneles web; comprobación automática de actualizaciones cada seis horas')
+  if (native) report.checks.push('Barra nativa izquierda persistente con paneles web; actualizador sin consola y estado consultable desde ajustes')
   if (native) report.checks.push('Página arbitraria en panel, ancho real y persistido, vista móvil/escritorio por página, filtros visuales fuera del inicio y estilo configurable')
   if (native) report.checks.push('Configuración de apariencia nativa, temas persistidos, iconos configurables, diez ciclos de panel y salida limpia')
   report.checks.push('Rechazo de certificado HTTPS no confiable')
@@ -452,7 +468,7 @@ try {
   report.checks.push('Contenido centrado en pantalla ancha; promoción de Brave Origin retirada de Sistema')
   if(native)report.checks.push('Modo oscuro web nativo: cambio real de fondo claro/oscuro y reversión sin cambiar el tema de ventana')
   await fs.writeFile(path.join(root, 'artifacts/verification.json'), JSON.stringify(report, null, 2))
-  if(process.env.VEYRION_WINDOWED_VERIFY==='1')await fs.writeFile(path.join(root,'artifacts/windowed-verification-040.json'),JSON.stringify({...report,windowed_verified:true},null,2))
+  if(process.env.VEYRION_WINDOWED_VERIFY==='1')await fs.writeFile(path.join(root,`artifacts/windowed-verification-${releaseVersion.replaceAll('.','')}.json`),JSON.stringify({...report,windowed_verified:true,stability_seconds:Number(process.env.VEYRION_STABILITY_SECONDS)||0},null,2))
   console.log(JSON.stringify(report, null, 2))
 } finally {
   if (testServer.listening) testServer.close()

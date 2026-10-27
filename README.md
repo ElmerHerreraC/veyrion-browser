@@ -4,7 +4,7 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
-La versión 0.6.0 conserva los paneles laterales en segundo plano, incorpora recientes y cuatro fondos locales en el inicio, y añade una sección nativa de actualizaciones con indicador lateral y un lanzador sin consola. Incluye una opción de minirreproductor automático basado en PiP nativo. Descarga el instalador en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
+La versión 0.7.0 añade botones de tableros y modo oscuro forzado en la barra lateral, muestra el indicador de actualización solo cuando existe una versión nueva y selecciona Google una vez para búsquedas normales y privadas. El asistente inicial permite importar datos y configurar el perfil local. La sincronización entre equipos queda pendiente: el servidor heredado devuelve un error y esta compilación carece de una clave de servicios autorizada. Conserva paneles en segundo plano, recientes, fondos locales y minirreproductor nativo. Descarga el instalador en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).
 
 ## Interfaz
 
@@ -25,7 +25,7 @@ La apariencia está inspirada en Opera GX. No se distribuyen sus recursos propie
 
 ## Actualizaciones
 
-Una tarea de Windows para el usuario consulta versiones firmadas cada 15 minutos y al iniciar sesión, sin crear ventanas de consola. Desde 0.6.0, el usuario solicita la instalación en Configuración → Aspecto visual → Actualizaciones; se descarga en segundo plano y se aplica al cerrar Veyrion. El icono ↑ lateral señala una versión disponible. Verifica RSA-SHA256, URL, tamaño y SHA-256 y rechaza retrocesos. No envía perfiles ni historial. Véase [Actualizaciones](docs/UPDATES.md).
+Una tarea de Windows para el usuario consulta versiones firmadas cada 15 minutos y al iniciar sesión, sin crear ventanas de consola. Desde 0.6.0, el usuario solicita la instalación en Configuración → Aspecto visual → Actualizaciones; se descarga en segundo plano y se aplica al cerrar Veyrion. El botón de descarga lateral aparece únicamente si hay una actualización más reciente disponible o en curso. Verifica RSA-SHA256, URL, tamaño y SHA-256 y rechaza retrocesos. No envía perfiles ni historial. Véase [Actualizaciones](docs/UPDATES.md).
 
 Los instaladores y `veyrion-update.json` se publican juntos en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases). La firma del canal de actualizaciones no equivale a una firma Authenticode de Windows.
 

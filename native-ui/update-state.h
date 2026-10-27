@@ -9,6 +9,7 @@
 #include "base/path_service.h"
 #include "base/process/launch.h"
 #include "base/values.h"
+#include "base/version.h"
 
 // Called only on a MayBlock worker. No arbitrary command, path or URL is accepted.
 inline base::DictValue VeyrionUpdateState(const std::string& action) {
@@ -30,6 +31,15 @@ inline base::DictValue VeyrionUpdateState(const std::string& action) {
     if (content.starts_with("\xEF\xBB\xBF")) content.erase(0, 3);
     auto value = base::JSONReader::ReadDict(content, base::JSON_PARSE_RFC);
     if (value) result.Merge(std::move(*value));
+  }
+  if (const auto* state = result.FindString("state"); state &&
+      (*state == "available" || *state == "downloading" || *state == "ready-on-close")) {
+    const auto* next = result.FindString("detail");
+    const auto* installed = result.FindString("installed");
+    const base::Version next_version(next ? *next : "");
+    const base::Version installed_version(installed ? *installed : "");
+    if (!next_version.IsValid() || (installed_version.IsValid() && next_version <= installed_version))
+      result.Set("state", "current");
   }
   if (action == "check" || action == "apply") {
     base::CommandLine command(directory.AppendASCII("updater").AppendASCII("VeyrionUpdate.exe"));

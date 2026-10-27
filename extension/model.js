@@ -1,5 +1,5 @@
 export const defaults = {
-  accent: 'violet', ambient: 'orbit', engine: 'duckduckgo', motion: false,
+  accent: 'violet', ambient: 'orbit', engine: 'google', motion: false,
   notes: '', wallpaper: '', customColor: '#a48bff', useCustomColor: false,
   brightness: 70, blur: 0, density: 'comfortable', effect: 'none',
   sounds: false, soundPack: 'glass', volume: 25, music: false,
@@ -26,19 +26,19 @@ export function safeUrl(value) {
     return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : null
   } catch { return null }
 }
-export function destination(value, engine = 'duckduckgo') {
+export function destination(value, engine = 'google') {
   const input = value.trim()
   if (/^[a-z][a-z0-9+.-]*:/i.test(input)) {
     const direct = safeUrl(input)
     if (direct) return direct
     // Ports on hostnames are handled below; other schemes stay search text.
-    if (!/^[\w.-]+:\d+(\/|$)/.test(input)) return (engines[engine] || engines.duckduckgo)[1] + encodeURIComponent(input)
+    if (!/^[\w.-]+:\d+(\/|$)/.test(input)) return (engines[engine] || engines.google)[1] + encodeURIComponent(input)
   }
   if (!/\s/.test(input) && /^(localhost|[\w-]+(?:\.[\w-]+)+)(:\d+)?([/?#]|$)/i.test(input)) {
     const url = safeUrl('https://' + input)
     if (url) return url
   }
-  return (engines[engine] || engines.duckduckgo)[1] + encodeURIComponent(input)
+  return (engines[engine] || engines.google)[1] + encodeURIComponent(input)
 }
 export function normalize(raw = {}) {
   const value = { ...structuredClone(defaults), ...raw }
