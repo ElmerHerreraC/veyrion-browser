@@ -14,7 +14,12 @@ internal static class VeyrionUpdateHost {
         UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden,
         WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory
       };
-      using (var process = Process.Start(start)) { process.WaitForExit(); return process.ExitCode; }
+      using (var process = Process.Start(start)) {
+        // Release our executable before the installer replaces the updater.
+        // The worker persists progress/errors; success here only means started.
+        if (args.Length == 1 && args[0] == "apply") return 0;
+        process.WaitForExit(); return process.ExitCode;
+      }
     } catch { return 1; }
   }
 }
