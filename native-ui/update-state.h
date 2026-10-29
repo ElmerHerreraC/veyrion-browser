@@ -33,7 +33,7 @@ inline base::DictValue VeyrionUpdateState(const std::string& action) {
     if (value) result.Merge(std::move(*value));
   }
   if (const auto* state = result.FindString("state"); state &&
-      (*state == "available" || *state == "downloading" || *state == "ready-on-close")) {
+      (*state == "available" || *state == "downloading" || *state == "verifying" || *state == "installing" || *state == "ready-on-close")) {
     const auto* next = result.FindString("detail");
     const auto* installed = result.FindString("installed");
     const base::Version next_version(next ? *next : "");

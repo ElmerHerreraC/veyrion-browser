@@ -14,6 +14,8 @@ Antes de publicar: ejecutar pruebas unitarias, pruebas nativas de navegación/ex
 
 ## Publicación del canal
 
+En 0.8.0 se muestra el inicio de la operación inmediatamente, se consulta el estado cada segundo y se publica el porcentaje y los MB recibidos cada medio segundo durante la descarga. Verificación e instalación tienen estados propios; los errores concretos aparecen en ajustes. El estado se escribe mediante archivo temporal para evitar lecturas de JSON incompleto. Si el usuario solicita instalar durante una comprobación automática, la solicitud espera hasta 35 segundos a que se libere el bloqueo. No se cierra el navegador ni se cambia el perfil al actualizar.
+
 Mantener sincronizadas las versiones de `package.json`, `extension/manifest.json`, `extension/update-config.json` e `installer/veyrion.iss`. `tools/package-native.ps1` prepara el actualizador con la clave pública de `extension/update-config.json`. `tools/sign-update.mjs` firma el recibo del instalador usando la clave privada existente en `artifacts/update-signing/private.pem`; esa clave nunca debe publicarse ni reemplazarse para instalaciones existentes. Si falta, recuperar la copia del editor antes de publicar. Una clave nueva no autoriza actualizaciones para los usuarios existentes.
 
 Publicar en el tag `v<versión>` los tres archivos de `dist`: `Veyrion-Setup-x64.exe`, `Veyrion-Setup-x64.exe.sha256` y `veyrion-update.json`. Marcar la publicación estable como latest y ejecutar `node tools/verify-release.mjs` para verificar firma, versión, tamaño y hash del canal público. El manifiesto firmado no sustituye una firma Authenticode de Windows.

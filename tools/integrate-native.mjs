@@ -13,6 +13,7 @@ import { integrateNativeSettings } from './integrate-native-settings.mjs'
 import { integrateSidebarLayout } from './integrate-sidebar-layout.mjs'
 import { integrateExperience } from './integrate-experience.mjs'
 import { integrateProfileSidebar } from './integrate-profile-sidebar.mjs'
+import { integrateCursorsProtection } from './integrate-cursors-protection.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
 const component = path.join(source, 'components/brave_extension/extension')
 const destination = path.join(component, 'brave_extension/veyrion_start')
@@ -65,4 +66,5 @@ integrateNativeSettings(source)
 integrateSidebarLayout(source)
 integrateExperience(source)
 integrateProfileSidebar(source)
+integrateCursorsProtection(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')

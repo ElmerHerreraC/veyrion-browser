@@ -1,6 +1,7 @@
 import {sendWithPromise as veyrionSend} from 'chrome://resources/js/cr.js'
 
 interface VeyrionAppearance {
+  cursorMode:string; cursorPng:string; cursorX:number; cursorY:number; aggressiveAds:boolean;
   mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean; autoPip: boolean;
   items: Array<{index: number; title: string; visible: boolean; icon: string}>;
   workspaces: Array<{id:number; name:string; tabs:number; current:boolean}>;
@@ -60,6 +61,21 @@ class VeyrionNativeAppearance extends HTMLElement {
       this.save_()
     })
     this.root_.getElementById('force-dark')!.addEventListener('change',()=>this.request_({forceDark:(this.root_.getElementById('force-dark') as HTMLInputElement).checked}))
+    const pointers=document.createElement('div');pointers.className='card general';pointers.appendChild(braveHtml`<h2>PUNTERO DEL NAVEGADOR</h2><p>Se aplica a la flecha normal en la interfaz y las páginas. Conserva los indicadores de texto, enlaces y redimensionado.</p><label class="row">Estilo<select id="cursor-mode"><option value="default">Normal</option><option value="cross">Cruz</option><option value="up">Flecha vertical</option><option value="custom">Imagen propia</option></select></label><label class="row">PNG transparente, hasta 128 × 128 y 100 KB<input type="file" id="cursor-file" accept="image/png"></label><label class="row">Punto de clic X<input id="cursor-x" type="number" min="0" max="127" value="0"></label><label class="row">Punto de clic Y<input id="cursor-y" type="number" min="0" max="127" value="0"></label><button class="arrow" id="cursor-save">Aplicar puntero</button><p id="cursor-status" role="status"></p>`);this.root_.getElementById('status')!.before(pointers)
+    this.root_.getElementById('cursor-save')!.addEventListener('click',async()=>{
+      const message=this.root_.getElementById('cursor-status')!
+      try{
+        const mode=(this.root_.getElementById('cursor-mode') as HTMLSelectElement).value
+        let png=this.state_?.cursorPng||''
+        const file=(this.root_.getElementById('cursor-file') as HTMLInputElement).files?.[0]
+        if(mode==='custom'&&file){if(file.type!=='image/png'||file.size>100000)throw Error('Elige un PNG de hasta 100 KB.');const bytes=new Uint8Array(await file.arrayBuffer());png=btoa(Array.from(bytes,b=>String.fromCharCode(b)).join(''))}
+        if(mode==='custom'&&!png)throw Error('Selecciona una imagen PNG.')
+        await this.request_({cursorMode:mode,cursorPng:png,cursorX:Number((this.root_.getElementById('cursor-x') as HTMLInputElement).value),cursorY:Number((this.root_.getElementById('cursor-y') as HTMLInputElement).value)})
+        message.textContent=this.state_?.cursorMode===mode?'Puntero guardado. Mueve el ratón para verlo.':'No se aplicó: comprueba tamaño y punto de clic.'
+      }catch(error){message.textContent=String(error)}
+    })
+    const protection=document.createElement('label');protection.className='row';protection.textContent='Bloqueo agresivo de anuncios y rastreadores'
+    const aggressive=document.createElement('input');aggressive.type='checkbox';aggressive.id='aggressive-ads';aggressive.addEventListener('change',()=>this.request_({aggressiveAds:aggressive.checked}));protection.append(aggressive);this.root_.getElementById('force-dark')!.closest('.card')!.append(protection)
     const video=document.createElement('label');video.className='row general';video.textContent='Minirreproductor automático al cambiar de pestaña'
     const autoPip=document.createElement('input');autoPip.type='checkbox';autoPip.id='auto-pip';autoPip.addEventListener('change',()=>this.request_({autoPip:autoPip.checked}));video.append(autoPip)
     this.root_.getElementById('force-dark')!.closest('.card')!.append(video)
@@ -67,7 +83,7 @@ class VeyrionNativeAppearance extends HTMLElement {
     this.root_.append(updates)
     for(const action of ['check','apply'])this.root_.getElementById('update-'+action)!.addEventListener('click',()=>this.updateStatus_(action))
     this.updateStatus_('status')
-    this.updateTimer_=window.setInterval(()=>this.updateStatus_('status'),10000)
+    this.updateTimer_=window.setInterval(()=>this.updateStatus_('status'),1000)
     if(new URLSearchParams(location.search).has('veyrionUpdates'))setTimeout(()=>updates.scrollIntoView({block:'start'}),400)
     if(sidebarOnly){this.classList.add('sidebar-only');this.root_.querySelector('.heading')!.textContent='CONFIGURACIÓN DE LA BARRA LATERAL';this.root_.querySelector('p')!.textContent='Elige accesos, ajusta iconos y cambia de tablero.'}
     for(const action of ['create','rename'])this.root_.getElementById('workspace-'+action)!.addEventListener('click',()=>{
@@ -82,11 +98,17 @@ class VeyrionNativeAppearance extends HTMLElement {
   disconnectedCallback(){window.clearInterval(this.updateTimer_);window.clearTimeout(this.timer_)}
   private async updateStatus_(action:string){
     try{
-      const value=await veyrionSend<{state:string;detail?:string;installed?:string;checkedAt?:string}>('veyrionAppearance',{updateAction:action})
+      const status=this.root_.getElementById('update-state')!
+      if(action!=='status')status.textContent=action==='apply'?'Iniciando descarga de la actualización…':'Buscando actualizaciones…'
+      const value=await veyrionSend<{state:string;detail?:string;installed?:string;checkedAt?:string;downloaded?:number;total?:number}>('veyrionAppearance',{updateAction:action})
       const messages:Record<string,string>={current:'Estás al día.',available:'Nueva versión '+(value.detail||'')+' disponible.',downloading:'Descargando y verificando la actualización…','ready-on-close':'Actualización lista. Cierra Veyrion cuando quieras instalarla.',installed:'Actualización instalada.',checking:'Buscando actualizaciones…',starting:'Preparando actualización…',error:'No se pudo completar la actualización. Puedes volver a intentarlo.',unchecked:'Todavía no hay una comprobación registrada.'}
-      this.root_.getElementById('update-state')!.textContent='Versión instalada: '+(value.installed||'—')+'. '+(messages[value.state]||value.state)+(value.checkedAt?' Última comprobación: '+new Date(value.checkedAt).toLocaleString()+'.':'')
+      messages['verifying']='Verificando integridad y firma del instalador…'
+      messages['installing']='Instalando actualización…'
+      if(value.state==='downloading'&&value.total)messages['downloading']='Descargando: '+Math.min(100,Math.floor((value.downloaded||0)*100/value.total))+'% ('+((value.downloaded||0)/1048576).toFixed(1)+' / '+(value.total/1048576).toFixed(1)+' MB).'
+      if(value.state==='error'&&value.detail)messages['error']+=' '+value.detail
+      status.textContent='Versión instalada: '+(value.installed||'—')+'. '+(messages[value.state]||value.state)+(value.checkedAt?' Última comprobación: '+new Date(value.checkedAt).toLocaleString()+'.':'')
       ;(this.root_.getElementById('update-apply') as HTMLButtonElement).hidden=value.state!=='available'
-      ;(this.root_.getElementById('update-check') as HTMLButtonElement).disabled=['checking','starting','downloading','ready-on-close'].includes(value.state)
+      ;(this.root_.getElementById('update-check') as HTMLButtonElement).disabled=['checking','starting','downloading','verifying','installing','ready-on-close'].includes(value.state)
     }catch{this.root_.getElementById('update-state')!.textContent='No se pudo consultar el estado local. Abre una ventana normal del navegador.'}
   }
   private async request_(request: object){
@@ -95,6 +117,10 @@ class VeyrionNativeAppearance extends HTMLElement {
   }
   private render_(){
     const state=this.state_!
+    ;(this.root_.getElementById('cursor-mode') as HTMLSelectElement).value=state.cursorMode
+    ;(this.root_.getElementById('cursor-x') as HTMLInputElement).value=String(state.cursorX)
+    ;(this.root_.getElementById('cursor-y') as HTMLInputElement).value=String(state.cursorY)
+    ;(this.root_.getElementById('aggressive-ads') as HTMLInputElement).checked=state.aggressiveAds
     const workspaces=this.root_.getElementById('workspaces')!;workspaces.replaceChildren()
     for(const [position,space] of state.workspaces.entries()){const name=space.name===`Tablero ${space.id}`?(space.current?'Personal':'Tablero '+(position+1)):space.name;const button=document.createElement('button');button.textContent=(space.current?'● ':'○ ')+name;button.setAttribute('aria-pressed',String(space.current));button.addEventListener('click',()=>this.request_({workspaceAction:'activate',id:space.id}));const row=document.createElement('div');row.className='row';row.append(button);workspaces.append(row)}
     this.root_.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset['mode']===state.mode)))

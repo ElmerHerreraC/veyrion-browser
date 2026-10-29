@@ -392,6 +392,23 @@ try {
       assert.equal(result.autoPip,autoPip,'El minirreproductor automático debe poder desactivarse y activarse')
     }
     const spacesBefore=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{}))`)
+    assert.equal(spacesBefore.aggressiveAds,true,'Un perfil nuevo debe activar el bloqueo agresivo')
+    for(const aggressiveAds of [false,true]){
+      const state=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{aggressiveAds:${aggressiveAds}}))`)
+      assert.equal(state.aggressiveAds,aggressiveAds)
+    }
+    for(const cursorMode of ['cross','up','default']){
+      const state=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{cursorMode:'${cursorMode}'}))`)
+      assert.equal(state.cursorMode,cursorMode)
+      await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:70,y:220})
+    }
+    const cursorPng=(await fs.readFile(path.join(root,'extension/icons/icon48.png'))).toString('base64')
+    const customCursor=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',${JSON.stringify({cursorMode:'custom',cursorPng,cursorX:2,cursorY:3})}))`)
+    assert.equal(customCursor.cursorMode,'custom')
+    assert.equal(customCursor.cursorX,2)
+    for(const invalid of [{cursorMode:'execute'},{cursorMode:'custom',cursorPng:'bm90LXBuZw==',cursorX:0,cursorY:0},{cursorMode:'custom',cursorPng,cursorX:127,cursorY:0}])
+      assert.ok(await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',${JSON.stringify(invalid)}).then(()=>false,()=>true))`),'Rechazar cursor o punto de clic inválido')
+    await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{cursorMode:'default'}))`)
     const visibleSpaceName=await evaluate(`(()=>{const find=root=>root.querySelector('veyrion-native-appearance')||[...root.querySelectorAll('*')].map(e=>e.shadowRoot&&find(e.shadowRoot)).find(Boolean);return find(document).shadowRoot.querySelector('#workspaces button[aria-pressed=true]')?.textContent||''})()`)
     assert.ok(visibleSpaceName&&!visibleSpaceName.includes(String(spacesBefore.workspaces.find(space=>space.current).id)),'Los tableros deben mostrar un nombre legible, sin identificadores internos')
     const spacesAfter=await evaluate(`import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{workspaceAction:'create',name:'Estudio de prueba'}))`)

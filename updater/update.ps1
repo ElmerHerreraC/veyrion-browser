@@ -1,6 +1,7 @@
 param([switch]$Apply)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'policy.ps1')
+$script:downloadVersion = $null
 $installDir = Split-Path -Parent $PSScriptRoot
 $installedExe = Join-Path $installDir 'veyrion.exe'
 $cache = Join-Path $env:LOCALAPPDATA 'Veyrion\Updates'
@@ -8,8 +9,11 @@ $cache = Join-Path $env:LOCALAPPDATA 'Veyrion\Updates'
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $mutex = New-Object Threading.Mutex($false, ('Local\VeyrionUpdate-' + $identity))
 $locked = $false
-function Write-UpdateStatus([string]$State, [string]$Detail) {
-  @{state=$State;detail=$Detail;checkedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $cache 'status.json') -Encoding UTF8
+function Write-UpdateStatus([string]$State, [string]$Detail, [long]$Downloaded = 0, [long]$Total = 0) {
+  $statusPath = Join-Path $cache 'status.json'
+  $json = @{state=$State;detail=$Detail;downloaded=$Downloaded;total=$Total;checkedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json
+  [IO.File]::WriteAllText(($statusPath + '.tmp'), $json, (New-Object Text.UTF8Encoding($false)))
+  Move-Item -LiteralPath ($statusPath + '.tmp') -Destination $statusPath -Force
 }
 function Save-BoundedDownload([string]$Url, [string]$Path, [long]$Limit) {
   $request = [Net.HttpWebRequest]::Create($Url)
@@ -24,21 +28,28 @@ function Save-BoundedDownload([string]$Url, [string]$Path, [long]$Limit) {
     try {
       $buffer = New-Object byte[] 65536
       [long]$total = 0
+      $lastProgress = [DateTime]::UtcNow
       while (($count = $inputStream.Read($buffer,0,$buffer.Length)) -gt 0) {
         $total += $count
         if ($total -gt $Limit) { throw 'Update exceeds permitted size.' }
         $outputStream.Write($buffer,0,$count)
+        if ($script:downloadVersion -and ([DateTime]::UtcNow - $lastProgress).TotalMilliseconds -ge 500) {
+          Write-UpdateStatus 'downloading' $script:downloadVersion $total $Limit
+          $lastProgress = [DateTime]::UtcNow
+        }
       }
     } finally { $outputStream.Dispose(); $inputStream.Dispose() }
   } finally { $response.Dispose() }
 }
 try {
-  try { $locked = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $locked = $true }
+  # A user click must not be discarded while the scheduled check owns the lock.
+  try { $locked = $mutex.WaitOne($(if ($Apply) { 35000 } else { 0 })) } catch [Threading.AbandonedMutexException] { $locked = $true }
   if (!$locked) { exit 0 }
   if ((Get-Item -LiteralPath $installedExe).VersionInfo.ProductName -ne 'Veyrion') { throw 'Unexpected installed product.' }
   $config = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'config.json') -Raw | ConvertFrom-Json
   if ($config.repository -cne 'ElmerHerreraC/veyrion-browser' -or $config.manifestUrl -cne 'https://github.com/ElmerHerreraC/veyrion-browser/releases/latest/download/veyrion-update.json') { throw 'Unexpected update channel.' }
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  Write-UpdateStatus $(if ($Apply) {'starting'} else {'checking'}) $config.version
   $manifestPath = Join-Path $cache 'manifest.download'
   Save-BoundedDownload $config.manifestUrl $manifestPath 20000
   $manifest = Read-UpdateManifest (Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json) $config
@@ -52,8 +63,11 @@ try {
   }
   if (!$valid) {
     Write-UpdateStatus 'downloading' $manifest.version
+    $script:downloadVersion = $manifest.version
     $temporary = $installer + '.download'
     Save-BoundedDownload $manifest.url $temporary $manifest.size
+    $script:downloadVersion = $null
+    Write-UpdateStatus 'verifying' $manifest.version $manifest.size $manifest.size
     Test-UpdateInstaller $temporary $manifest
     Move-Item -LiteralPath $temporary -Destination $installer -Force
   }
@@ -64,6 +78,7 @@ try {
   $current = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'config.json') -Raw | ConvertFrom-Json
   if ([Version]$manifest.version -le [Version]$current.version) { exit 0 }
   Test-UpdateInstaller $installer $manifest
+  Write-UpdateStatus 'installing' $manifest.version
   $process = Start-Process -FilePath $installer -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCLOSEAPPLICATIONS' -PassThru -WindowStyle Hidden
   $process.WaitForExit()
   if ($process.ExitCode -ne 0) { throw ('Installer exit: ' + $process.ExitCode) }

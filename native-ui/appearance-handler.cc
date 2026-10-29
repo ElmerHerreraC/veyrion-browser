@@ -18,6 +18,13 @@
 #include "url/gurl.h"
 #include "base/task/thread_pool.h"
 #include "brave/browser/ui/webui/settings/veyrion_update_state.h"
+#include "base/base64.h"
+#include "base/containers/span.h"
+#include "brave/browser/ui/webui/settings/veyrion_cursor_validation.h"
+#include "ui/gfx/codec/png_codec.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "brave/components/brave_shields/core/browser/brave_shields_utils.h"
+#include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 
 void BraveAppearanceHandler::HandleVeyrionAppearance(const base::ListValue& args) {
   if (args.size() != 2 || !args[0].is_string() || !args[1].is_dict()) return;
@@ -41,6 +48,26 @@ void BraveAppearanceHandler::HandleVeyrionAppearance(const base::ListValue& args
   auto* theme = ThemeServiceFactory::GetForProfile(profile_);
   auto* service = sidebar::SidebarServiceFactory::GetForProfile(profile_);
   auto fail = [&]() { RejectJavascriptCallback(args[0], base::Value("Configuración inválida")); };
+  if (const auto* mode = request.FindString("cursorMode")) {
+    if (*mode != "default" && *mode != "cross" && *mode != "up" && *mode != "custom") { fail(); return; }
+    if (*mode == "custom") {
+      const auto* image = request.FindString("cursorPng");
+      const auto x = request.FindInt("cursorX"), y = request.FindInt("cursorY");
+      std::string bytes;
+      if (!image || image->size() > 134000 || !x || !y ||
+          !base::Base64Decode(*image, &bytes) || !VeyrionValidCursorPng(bytes)) { fail(); return; }
+      auto bitmap = gfx::PNGCodec::Decode(base::as_byte_span(bytes));
+      if (bitmap.isNull() || *x < 0 || *y < 0 || *x >= bitmap.width() || *y >= bitmap.height()) { fail(); return; }
+      prefs->SetString("veyrion.cursor_png", *image);
+      prefs->SetInteger("veyrion.cursor_x", *x);
+      prefs->SetInteger("veyrion.cursor_y", *y);
+    }
+    prefs->SetString("veyrion.cursor_mode", *mode);
+  }
+  auto* protection = HostContentSettingsMapFactory::GetForProfile(profile_);
+  if (auto aggressive = request.FindBool("aggressiveAds"))
+    brave_shields::SetCosmeticFilteringControlType(protection,
+        *aggressive ? brave_shields::ControlType::BLOCK : brave_shields::ControlType::BLOCK_THIRD_PARTY, GURL());
   auto* tab = tabs::TabInterface::MaybeGetFromContents(web_ui()->GetWebContents());
   auto* current_window = tab ? tab->GetBrowserWindowInterface() : nullptr;
   if (const auto* action = request.FindString("workspaceAction")) {
@@ -120,6 +147,11 @@ void BraveAppearanceHandler::HandleVeyrionAppearance(const base::ListValue& args
   if (const auto force_dark = request.FindBool("forceDark"))
     prefs->SetBoolean(prefs::kWebKitForceDarkModeEnabled, *force_dark);
   base::DictValue state;
+  state.Set("cursorMode", prefs->GetString("veyrion.cursor_mode"));
+  state.Set("cursorPng", prefs->GetString("veyrion.cursor_png"));
+  state.Set("cursorX", prefs->GetInteger("veyrion.cursor_x"));
+  state.Set("cursorY", prefs->GetInteger("veyrion.cursor_y"));
+  state.Set("aggressiveAds", brave_shields::GetCosmeticFilteringControlType(protection, GURL()) == brave_shields::ControlType::BLOCK);
   base::ListValue workspaces;
   if (!profile_->IsOffTheRecord()) ProfileBrowserCollection::GetForProfile(profile_)->ForEach([&](BrowserWindowInterface* window) {
     if (window->GetType() != BrowserWindowInterface::TYPE_NORMAL) return true;
