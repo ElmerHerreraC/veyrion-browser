@@ -12,20 +12,12 @@
     <div class="rail-bottom"><button data-page="settings" title="Ajustes del navegador" aria-label="Ajustes del navegador">⚙</button><button id="customize" title="Personalizar inicio" aria-label="Personalizar inicio">◈</button></div>
   </aside>
   <main>
-    <header><div class="wordmark"><img src="icons/icon48.png" width="32" height="32" alt="">VEYRION <span>UN ESPACIO PARA TI</span></div><div class="header-actions"><button id="start-customize" class="outline">Personalizar inicio</button><button id="customize-top" class="outline">Configuración del navegador</button></div></header>
+    <header><div class="wordmark"><img src="icons/icon48.png" width="32" height="32" alt="">VEYRION</div><div class="header-clock"><time id="clock"></time><span id="date"></span></div><div class="header-actions"><button id="start-customize" class="outline">Personalizar</button><button id="customize-top" class="outline">Configuración del navegador</button></div></header>
     <section class="hero">
       <div class="eyebrow"><span class="live-dot"></span> TU ESPACIO. TUS REGLAS.</div>
       <h1>¿A dónde vamos?</h1>
-      <p class="subtitle">Tus sitios, tus ideas, tu siguiente paso.</p>
-      <form id="search" class="search"><span aria-hidden="true">⌕</span><input id="query" aria-label="Buscar o introducir una dirección" placeholder="Busca algo. Descubre más." autocomplete="off" required><button type="submit" aria-label="Buscar">↗</button></form>
-      <div class="search-caption"><span id="engine-label">DuckDuckGo</span><span>BUSCA O ESCRIBE UNA DIRECCIÓN</span></div>
+      <form id="search" class="search"><span id="search-engine-icon"><img src="google-mark.svg" width="24" height="24" alt="Google"></span><input id="query" aria-label="Buscar o introducir una dirección" placeholder="Busca algo. Descubre más." autocomplete="off" required><button type="submit" aria-label="Buscar">↗</button></form>
     </section>
-    <section class="workspace">
-      <div class="links-section"><div class="section-heading"><h2>Acceso rápido</h2><button id="add-link">+ Añadir</button></div><div id="shortcuts" class="shortcuts"></div>
-      <div class="engine-card"><span class="card-symbol">✧</span><div><h3>Tu navegador, completo</h3><p>Gestiona y añade tus extensiones.</p></div><button data-page="extensions">Abrir ↗</button></div></div>
-      <div class="notes-card"><div class="section-heading"><h2>Bloc rápido</h2><span id="note-status">LOCAL</span></div><textarea id="notes" aria-label="Notas personales" placeholder="Una idea para después…" maxlength="12000"></textarea><p>Guardado en este perfil. Sin sincronización.</p></div>
-    </section>
-    <footer><div><time id="clock"></time><span id="date"></span></div></footer>
   </main>
   <dialog id="settings-dialog"><form method="dialog" class="dialog-header"><div><span class="eyebrow">HAZLO TUYO</span><h2>Tu ambiente</h2></div><button aria-label="Cerrar">✕</button></form>
     <nav class="settings-tabs" aria-label="Secciones de personalización"><button data-panel="visual" aria-pressed="true">Apariencia</button><button data-panel="audio" aria-pressed="false">Sonido</button><button data-panel="layout" aria-pressed="false">Diseño</button><button data-panel="mods" aria-pressed="false">Mods</button><button data-panel="updates" aria-pressed="false">Actualizar</button></nav>
@@ -33,7 +25,7 @@
     <label>Color de acento</label><div class="swatches"><button data-accent="violet" aria-label="Violeta" aria-pressed="true"></button><button data-accent="cyan" aria-label="Cian" aria-pressed="false"></button><button data-accent="rose" aria-label="Rosa" aria-pressed="false"></button><button data-accent="lime" aria-label="Lima" aria-pressed="false"></button></div>
     <div class="color-row"><label for="custom-color">Color propio</label><input id="custom-color" type="color" data-setting="customColor"><label class="toggle"><input type="checkbox" data-setting="useCustomColor"> Usarlo</label></div>
     <label for="ambient">Ambiente</label><select id="ambient"><option value="orbit">Órbita</option><option value="grid">Retícula</option><option value="quiet">Silencio</option></select>
-    <label for="engine">Buscador</label><select id="engine"><option value="duckduckgo">DuckDuckGo</option><option value="brave">Brave Search</option><option value="google">Google</option></select>
+    <label for="engine">Buscador</label><select id="engine"><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option><option value="brave">Brave Search</option></select>
     <label class="toggle"><input type="checkbox" id="motion"> Animación ambiental</label>
     <label for="live-wallpaper-input">Fondo de imagen o vídeo</label><input id="live-wallpaper-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/webm,video/mp4"><p class="help">Vídeo WebM/MP4 de hasta 25 MB y 1080p; imágenes de hasta 12 MB. El fondo se guarda en este equipo y se pausa al salir de esta pestaña. Para menor consumo, usa vídeo corto a 24/30 fps.</p><p id="wallpaper-media-status" role="status" class="help"></p><button id="pause-wallpaper" class="outline">Pausar fondo</button>
     <input id="wallpaper" type="file" accept="image/png,image/jpeg,image/webp" hidden><button id="clear-wallpaper" class="outline">Quitar fondo</button>
@@ -70,7 +62,6 @@
   <script type="module" src="app.js"></script>
   <script type="module" src="customization.js"></script>
   <script src="update-core.js"></script>
-  <script type="module" src="updates.js"></script>
   <script type="module" src="unified.js"></script>
   <script type="module" src="live-wallpaper.js"></script>
   <script type="module" src="home-extras.js"></script>

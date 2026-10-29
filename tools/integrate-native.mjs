@@ -20,6 +20,7 @@ const destination = path.join(component, 'brave_extension/veyrion_start')
 fs.mkdirSync(destination, { recursive: true })
 const files = ['index.html', 'style.css', 'customization.css', 'unified.css', 'home.css', 'live-wallpaper.js', 'unified.js', 'app.js', 'customization.js', 'model.js', 'web-appearance.js', 'update-core.js', 'updates.js', 'updates-background.js', 'update-config.json', ...[16, 32, 48, 128, 256].map(size => `icons/icon${size}.png`)]
 files.push('home-extras.js','onboarding.js',...['mountains','coast','planet','nebula'].map(name=>'wallpapers/'+name+'.svg'))
+files.push('google-mark.svg','site-icon.svg')
 for (const file of files) {
   const target = path.join(destination, file)
   fs.mkdirSync(path.dirname(target), { recursive: true })

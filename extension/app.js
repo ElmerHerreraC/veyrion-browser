@@ -49,8 +49,8 @@ function apply() {
   document.documentElement.style.setProperty('--tile-size', `${state.tileSize}px`)
   document.documentElement.style.setProperty('--panel-opacity', `${state.panelOpacity}%`)
   document.body.classList.toggle('hide-sidebar', !state.showSidebar)
-  $('.notes-card').hidden = !state.showNotes
-  $('footer div').hidden = !state.showClock
+  if($('.notes-card'))$('.notes-card').hidden = !state.showNotes
+  $('.header-clock').hidden = !state.showClock
   document.documentElement.style.setProperty('--wallpaper-dim', String(1 - state.brightness / 100))
   document.documentElement.style.setProperty('--wallpaper-blur', `${state.blur}px`)
   document.body.classList.toggle('motion', state.motion)
@@ -58,12 +58,16 @@ function apply() {
   $('#engine').value = state.engine
   $('#ambient').value = state.ambient
   $('#motion').checked = state.motion
-  $('#engine-label').textContent = engines[state.engine][0]
+  const engineIcon=$('#search-engine-icon')
+  engineIcon.replaceChildren()
+  if(state.engine==='google'){const logo=document.createElement('img');logo.src='google-mark.svg';logo.alt='Google';logo.width=24;logo.height=24;engineIcon.append(logo)}
+  else{engineIcon.textContent='⌕';engineIcon.setAttribute('aria-label',engines[state.engine][0])}
   document.querySelectorAll('[data-setting]').forEach(control => { const key = control.dataset.setting; if (control.type === 'checkbox') control.checked = state[key]; else control.value = state[key] })
   document.querySelectorAll('[data-accent]').forEach(button => button.setAttribute('aria-pressed', String(!state.useCustomColor && button.dataset.accent === state.accent)))
   document.dispatchEvent(new Event('veyrion-appearance'))
 }
 function renderLinks() {
+  if(!$('#shortcuts'))return
   $('#shortcuts').replaceChildren()
   state.shortcuts.forEach((item, index) => {
     const card = document.createElement('div')
@@ -102,12 +106,12 @@ for (const property of ['engine', 'ambient', 'motion']) $(`#${property}`).addEve
 })
 document.querySelectorAll('[data-accent]').forEach(button => button.addEventListener('click', () => { appearanceRevision++; lastAppearanceEdit=Date.now(); state.accent = button.dataset.accent; state.useCustomColor = false; apply(); document.dispatchEvent(new Event('veyrion-settings')); save().catch(() => {}) }))
 document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', async () => {
-  const url = `brave://${button.dataset.page}/`
+  const url = `chrome://${button.dataset.page}/`
   if (extension) {
     try { await chrome.tabs.create({ url }) } catch { toast('Abre esta dirección en la barra: ' + url) }
   } else toast('En la extensión puedes abrir ' + url)
 }))
-$('#add-link').addEventListener('click', () => state.shortcuts.length < 16 ? $('#link-dialog').showModal() : toast('Puedes guardar hasta 16 accesos.'))
+$('#add-link')?.addEventListener('click', () => state.shortcuts.length < 16 ? $('#link-dialog').showModal() : toast('Puedes guardar hasta 16 accesos.'))
 $('#close-link').addEventListener('click', () => $('#link-dialog').close())
 $('#link-form').addEventListener('submit', event => {
   event.preventDefault()
@@ -117,7 +121,7 @@ $('#link-form').addEventListener('submit', event => {
   renderLinks(); save().catch(() => {}); $('#link-dialog').close(); event.target.reset()
 })
 let noteTimer
-$('#notes').addEventListener('input', () => {
+$('#notes')?.addEventListener('input', () => {
   state.notes = $('#notes').value
   $('#note-status').textContent = 'GUARDANDO…'
   clearTimeout(noteTimer)
@@ -161,7 +165,7 @@ globalThis.chrome?.runtime?.onMessage?.addListener(message=>{
   if(message?.type==='veyrion-appearance-applied')readNativeAppearance(true).then(changed=>{if(changed)apply()})
 })
 window.addEventListener('focus',()=>setTimeout(()=>readNativeAppearance().then(changed=>{if(changed)apply()}),100))
-apply(); renderLinks(); $('#notes').value = state.notes; clock(); setInterval(clock, 30000)
+apply(); renderLinks(); if($('#notes'))$('#notes').value = state.notes; clock(); setInterval(clock, 30000)
 document.body.dataset.ready = 'true'
 export function preferences() { return structuredClone(state) }
 export function updatePreferences(patch) {

@@ -4,6 +4,8 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
+En 0.8.1 el inicio retira accesos rápidos, notas y promociones; coloca reloj y fecha en cabecera, usa el logo local de Google y muestra los favicons locales de los recientes, con símbolo neutro cuando no hay icono. Personalizar reúne fondo, sonido y diseño con enlaces directos a ventana, barra lateral, punteros, actualizaciones y perfil. Se eliminan los controles laterales y de actualización duplicados del panel del inicio.
+
 La versión 0.8.0 añade cursores nativos por perfil y PNG propios (hasta 128 × 128, 100 KB, con punto de clic ajustable), bloqueo agresivo predeterminado y progreso de descarga con errores visibles. El clic de instalación espera una comprobación automática en curso en lugar de descartarse. No modifica el esquema de cursores de Windows.
 
 La versión 0.7.1 corrige el cierre al arrastrar iconos por huecos de la barra lateral y añade botones de tableros y modo oscuro forzado en la barra lateral, muestra el indicador de actualización solo cuando existe una versión nueva y selecciona Google una vez para búsquedas normales y privadas. El asistente inicial permite importar datos y configurar el perfil local. La sincronización entre equipos queda pendiente: el servidor heredado devuelve un error y esta compilación carece de una clave de servicios autorizada. Conserva paneles en segundo plano, recientes, fondos locales y minirreproductor nativo. Descarga el instalador en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases/latest).

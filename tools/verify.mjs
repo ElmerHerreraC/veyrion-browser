@@ -86,7 +86,7 @@ try {
   assert.ok(ready, 'La extensión debe reemplazar la nueva pestaña y cargar sus módulos')
   for(let i=0;i<150;i++){if(await evaluate('document.body.dataset.onboardingReady === "true"'))break;await delay(100)}
   assert.ok(await evaluate('document.body.dataset.onboardingReady === "true"'),'El asistente de perfil debe cargar');
-  assert.ok(await evaluate('!document.querySelector("footer").textContent.includes("ESPACIO PERSONAL")'));
+  assert.ok(await evaluate('!document.querySelector("header").textContent.includes("ESPACIO PERSONAL")'));
   await evaluate('document.querySelector("#onboarding-done").click()');
 
   for(const width of (process.env.VEYRION_WINDOWED_VERIFY==='1'?[null]:[1920,1440])){
@@ -151,18 +151,12 @@ try {
   }
   const url = await evaluate('location.href')
   assert.match(url, /^chrome-extension:\/\//)
-  assert.equal(await evaluate('document.querySelectorAll(".shortcut").length'), 4)
+  assert.equal(await evaluate('document.querySelectorAll(".workspace,.notes-card,.engine-card").length'), 0)
   assert.equal(await evaluate('document.title'), 'Veyrion · Nueva pestaña')
   assert.ok(await evaluate('document.body.dataset.customizationReady === "true"'))
   await evaluate('document.querySelector("#customize").click(); document.querySelector("[data-panel=mods]").click(); document.querySelector("[data-preset=terminal]").click()')
   assert.equal(await evaluate('document.body.dataset.effect'), 'scanlines')
   assert.equal(await evaluate('document.querySelector("[data-setting=soundPack]").value'), 'arcade')
-  if(process.env.VEYRION_VERIFY_TRACE==='1')console.log('NOTES BEFORE',await evaluate(`(()=>{window.noteEvents=[];const input=document.querySelector('[data-setting=showNotes]');for(const type of ['click','input','change'])input.addEventListener(type,event=>window.noteEvents.push({type,checked:input.checked,prevented:event.defaultPrevented}),true);return {checked:input.checked,disabled:input.disabled,open:document.querySelector('#settings-dialog').open}})()`))
-  await evaluate('document.querySelector("[data-panel=layout]").click(); document.querySelector("[data-setting=showNotes]").click()')
-  if(process.env.VEYRION_VERIFY_TRACE==='1')console.log('NOTES DEBUG',await evaluate(`import('./app.js').then(m=>({checked:document.querySelector('[data-setting=showNotes]').checked,preference:m.preferences().showNotes,hidden:document.querySelector('.notes-card').hidden,unified:document.body.dataset.unifiedReady,events:window.noteEvents}))`))
-  assert.equal(await evaluate('document.querySelector(".notes-card").hidden'), true)
-  await evaluate('document.querySelector("[data-setting=showNotes]").click(); document.querySelector("[data-setting=density]").value="compact"; document.querySelector("[data-setting=density]").dispatchEvent(new Event("change"))')
-  assert.equal(await evaluate('document.body.dataset.density'), 'compact')
   await evaluate(`(() => { const transfer = new DataTransfer(); transfer.items.add(new File([JSON.stringify({format:'veyrion-mod',version:1,settings:{accent:'rose',effect:'vignette',customColor:'javascript:alert(1)',volume:900}})], 'test.json', {type:'application/json'})); const input=document.querySelector('#import-mod'); input.files=transfer.files; input.dispatchEvent(new Event('change')); })()`)
   await delay(200)
   assert.equal(await evaluate('document.body.dataset.effect'), 'vignette')
@@ -173,7 +167,7 @@ try {
   await evaluate('document.querySelector("#settings-dialog").close()')
   await evaluate('document.querySelector("#customize").click(); document.querySelector("[data-accent=cyan]").click()')
   assert.equal(await evaluate('document.querySelector("[data-accent=cyan]").getAttribute("aria-pressed")'), 'true')
-  await evaluate('document.querySelector("#settings-dialog").close(); document.querySelector("#notes").value="Prueba de persistencia"; document.querySelector("#notes").dispatchEvent(new Event("input"))')
+  await evaluate('document.querySelector("#settings-dialog").close()')
   await delay(650)
   if(process.env.VEYRION_VERIFY_TRACE==='1')console.log('COLOR BEFORE RELOAD',await evaluate(`Promise.all([import('./app.js').then(m=>({accent:m.preferences().accent,custom:m.preferences().useCustomColor,hex:m.preferences().customColor})),new Promise(resolve=>chrome.braveTheme.getVeyrionChrome(resolve))])`))
   const previousDocument=await evaluate('performance.timeOrigin')
@@ -183,17 +177,11 @@ try {
     await delay(100)
   }
   if(process.env.VEYRION_VERIFY_TRACE==='1')console.log('COLOR AFTER RELOAD',await evaluate(`Promise.all([import('./app.js').then(m=>({accent:m.preferences().accent,custom:m.preferences().useCustomColor,hex:m.preferences().customColor})),new Promise(resolve=>chrome.braveTheme.getVeyrionChrome(resolve))])`))
-  assert.equal(await evaluate('document.querySelector("#notes").value'), 'Prueba de persistencia')
   for(let i=0;i<100;i++){
     if(await evaluate('document.querySelector("[data-accent=cyan]").getAttribute("aria-pressed") === "true"'))break
     await delay(100)
   }
   assert.equal(await evaluate('document.querySelector("[data-accent=cyan]").getAttribute("aria-pressed")'), 'true')
-  await evaluate('document.querySelector("#add-link").click(); document.querySelector("#link-title").value="Ejemplo"; document.querySelector("#link-url").value="https://example.com/"; document.querySelector("#link-form").requestSubmit()')
-  assert.equal(await evaluate('document.querySelectorAll(".shortcut").length'), 5)
-  await evaluate('document.querySelector(".shortcut:last-child .remove").click()')
-  assert.equal(await evaluate('document.querySelectorAll(".shortcut").length'), 4)
-  await evaluate('document.querySelector("#notes").value="Construir algo que valga la pena.\\nUna pestaña a la vez."; document.querySelector("[data-accent=violet]").click()')
   const screenshot = await cdp('Page.captureScreenshot', { format: 'png' })
   await fs.writeFile(path.join(root, 'artifacts/preview.png'), Buffer.from(screenshot.data, 'base64'))
   await new Promise(resolve => testServer.listen(0, '127.0.0.1', resolve))
@@ -495,7 +483,7 @@ try {
     assert.ok(panelData.includes(testedPanelUrl),'La página personalizada debe guardarse en la barra')
     for (const host of ['web.whatsapp.com', 'web.telegram.org', 'discord.com', 'twitch.tv', 'open.spotify.com']) assert.ok(panelData.includes(host), 'Debe guardarse el panel de ' + host)
   }
-  const report = { passed: true, browser: executable, extension_url: url, checks: [native ? 'Inicio integrado en binario propio sin extensión externa' : 'MV3 cargado en Brave', 'Nueva pestaña sustituida', 'Nombre Veyrion', 'Presets visuales y sonoros', 'Densidad y visibilidad', 'Importación de mod y validación de valores', 'Cambio de acento', 'Persistencia tras recarga', 'Añadir y quitar acceso', 'Navegación HTTP y JavaScript', 'APIs de extensión aisladas de páginas web', 'Gestor nativo de extensiones disponible'], native_build_verified: native }
+  const report = { passed: true, browser: executable, extension_url: url, checks: [native ? 'Inicio integrado en binario propio sin extensión externa' : 'MV3 cargado en Brave', 'Nueva pestaña sustituida', 'Nombre Veyrion', 'Presets visuales y sonoros', 'Inicio simplificado con reloj en cabecera', 'Importación de mod y validación de valores', 'Cambio de acento', 'Persistencia tras recarga', 'Bloques de accesos y notas retirados del inicio', 'Navegación HTTP y JavaScript', 'APIs de extensión aisladas de páginas web', 'Gestor nativo de extensiones disponible'], native_build_verified: native }
   if (testExtensions) report.checks.push('Instalación y ejecución de extensión MV3 independiente sin permisos adicionales')
   if (native) report.checks.push('Google predeterminado normal y privado; bloqueo de solicitud publicitaria del panel sin impedir recursos normales; asistente de perfil cargado')
   if (native) report.checks.push('Color aplicado al tema nativo de pestañas y barra; valores fuera de rango rechazados')

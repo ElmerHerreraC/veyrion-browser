@@ -21,11 +21,13 @@ async function refresh(){
       const parsed=new URL(url),key=parsed.origin+parsed.pathname
       if(seen.has(key))continue;seen.add(key)
       const anchor=document.createElement('a');anchor.href=url;anchor.title=item.title||parsed.hostname
-      const glyph=document.createElement('span');glyph.className='recent-glyph';glyph.textContent=parsed.hostname.replace(/^www\./,'')[0].toUpperCase()
+      const glyph=document.createElement('span');glyph.className='recent-glyph';const image=document.createElement('img');image.alt='';image.width=32;image.height=32
+      image.src=globalThis.chrome?.history?'chrome://favicon/size/64@1x/'+url:'site-icon.svg'
+      image.addEventListener('error',()=>{image.src='site-icon.svg'},{once:true});glyph.append(image)
       const label=document.createElement('span');label.textContent=item.title||parsed.hostname
       anchor.append(glyph,label);list.append(anchor);if(list.children.length===8)break
     }
-    status.textContent=list.children.length?'Solo en este perfil. No se envían a ningún servidor.':'Todavía no hay páginas recientes. Se mostrarán cuando navegues.'
+    status.textContent=list.children.length?'':'Todavía no hay páginas recientes. Se mostrarán cuando navegues.'
   }catch{status.textContent='No se pudo leer el historial local.'}
 }
 toggle.addEventListener('change',()=>updatePreferences({showRecent:toggle.checked}))

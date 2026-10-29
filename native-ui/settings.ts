@@ -10,6 +10,7 @@ interface VeyrionAppearance {
 class VeyrionNativeAppearance extends HTMLElement {
   private state_: VeyrionAppearance|null = null
   private timer_: number|undefined
+  private initialScrollDone_=false
   private root_ = this.attachShadow({mode:'open'})
   connectedCallback() {
     const sidebarOnly = new URLSearchParams(location.search).has('veyrionSidebar')
@@ -61,7 +62,7 @@ class VeyrionNativeAppearance extends HTMLElement {
       this.save_()
     })
     this.root_.getElementById('force-dark')!.addEventListener('change',()=>this.request_({forceDark:(this.root_.getElementById('force-dark') as HTMLInputElement).checked}))
-    const pointers=document.createElement('div');pointers.className='card general';pointers.appendChild(braveHtml`<h2>PUNTERO DEL NAVEGADOR</h2><p>Se aplica a la flecha normal en la interfaz y las páginas. Conserva los indicadores de texto, enlaces y redimensionado.</p><label class="row">Estilo<select id="cursor-mode"><option value="default">Normal</option><option value="cross">Cruz</option><option value="up">Flecha vertical</option><option value="custom">Imagen propia</option></select></label><label class="row">PNG transparente, hasta 128 × 128 y 100 KB<input type="file" id="cursor-file" accept="image/png"></label><label class="row">Punto de clic X<input id="cursor-x" type="number" min="0" max="127" value="0"></label><label class="row">Punto de clic Y<input id="cursor-y" type="number" min="0" max="127" value="0"></label><button class="arrow" id="cursor-save">Aplicar puntero</button><p id="cursor-status" role="status"></p>`);this.root_.getElementById('status')!.before(pointers)
+    const pointers=document.createElement('div');pointers.id='veyrion-cursor';pointers.className='card general';pointers.appendChild(braveHtml`<h2>PUNTERO DEL NAVEGADOR</h2><p>Se aplica a la flecha normal en la interfaz y las páginas. Conserva los indicadores de texto, enlaces y redimensionado.</p><label class="row">Estilo<select id="cursor-mode"><option value="default">Normal</option><option value="cross">Cruz</option><option value="up">Flecha vertical</option><option value="custom">Imagen propia</option></select></label><label class="row">PNG transparente, hasta 128 × 128 y 100 KB<input type="file" id="cursor-file" accept="image/png"></label><label class="row">Punto de clic X<input id="cursor-x" type="number" min="0" max="127" value="0"></label><label class="row">Punto de clic Y<input id="cursor-y" type="number" min="0" max="127" value="0"></label><button class="arrow" id="cursor-save">Aplicar puntero</button><p id="cursor-status" role="status"></p>`);this.root_.getElementById('status')!.before(pointers)
     this.root_.getElementById('cursor-save')!.addEventListener('click',async()=>{
       const message=this.root_.getElementById('cursor-status')!
       try{
@@ -117,6 +118,7 @@ class VeyrionNativeAppearance extends HTMLElement {
   }
   private render_(){
     const state=this.state_!
+    if(!this.initialScrollDone_){this.initialScrollDone_=true;const target=this.root_.getElementById(location.hash.slice(1));if(target)requestAnimationFrame(()=>target.scrollIntoView({block:'start'}))}
     ;(this.root_.getElementById('cursor-mode') as HTMLSelectElement).value=state.cursorMode
     ;(this.root_.getElementById('cursor-x') as HTMLInputElement).value=String(state.cursorX)
     ;(this.root_.getElementById('cursor-y') as HTMLInputElement).value=String(state.cursorY)

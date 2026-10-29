@@ -18,7 +18,7 @@ async function finish(){
 }
 for(const id of ['onboarding-close','onboarding-done'])dialog.querySelector('#'+id).addEventListener('click',finish)
 dialog.addEventListener('cancel',event=>{event.preventDefault();finish()})
-const button=document.createElement('button');button.id='configure-profile';button.className='outline';button.textContent='Perfil y sincronización';button.addEventListener('click',()=>dialog.showModal());document.querySelector('.header-actions').prepend(button)
+const button=document.createElement('button');button.id='configure-profile';button.className='outline';button.textContent='Perfil y sincronización';button.addEventListener('click',()=>dialog.showModal());document.querySelector('.settings-destinations').append(button)
 const saved=storage?await new Promise(resolve=>storage.get(['veyrionProfileSetupDone','veyrionGoogleHomeDefault'],resolve)):{veyrionProfileSetupDone:localStorage.getItem('veyrionProfileSetupDone')==='true',veyrionGoogleHomeDefault:localStorage.getItem('veyrionGoogleHomeDefault')==='true'}
 if(!saved.veyrionGoogleHomeDefault){await updatePreferences({engine:'google'});if(storage)storage.set({veyrionGoogleHomeDefault:true});else localStorage.setItem('veyrionGoogleHomeDefault','true')}
 if(native&&!globalThis.chrome?.extension?.inIncognitoContext&&!saved.veyrionProfileSetupDone)dialog.showModal()
