@@ -31,7 +31,7 @@ La apariencia está inspirada en Opera GX. No se distribuyen sus recursos propie
 
 ## Actualizaciones
 
-Una tarea de Windows para el usuario consulta versiones firmadas cada 15 minutos y al iniciar sesión, sin crear ventanas de consola. Desde 0.6.0, el usuario solicita la instalación en Configuración → Aspecto visual → Actualizaciones; se descarga en segundo plano y se aplica al cerrar Veyrion. El botón de descarga lateral aparece únicamente si hay una actualización más reciente disponible o en curso. Verifica RSA-SHA256, URL, tamaño y SHA-256 y rechaza retrocesos. No envía perfiles ni historial. Véase [Actualizaciones](docs/UPDATES.md).
+Una tarea de Windows para el usuario consulta versiones firmadas cada 15 minutos y al iniciar sesión, sin crear ventanas de consola. Desde 0.8.2, una notificación dentro del navegador permite actualizar y reiniciar; también se puede solicitar en Configuración → Aspecto visual → Actualizaciones. Se descarga en segundo plano y se verifica antes del cierre normal y la instalación. El botón de descarga lateral aparece únicamente si hay una actualización más reciente disponible o en curso. Verifica RSA-SHA256, URL, tamaño y SHA-256 y rechaza retrocesos. No envía perfiles ni historial. Véase [Actualizaciones](docs/UPDATES.md).
 
 Los instaladores y `veyrion-update.json` se publican juntos en [Releases](https://github.com/ElmerHerreraC/veyrion-browser/releases). La firma del canal de actualizaciones no equivale a una firma Authenticode de Windows.
 

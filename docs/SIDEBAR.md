@@ -1,6 +1,6 @@
 # Barra lateral y tableros
 
-El botón de tres puntos situado sobre el engranaje abre únicamente la configuración de la barra lateral en un panel compacto. El engranaje abre la apariencia general del navegador. Los accesos a Descargas y Extensiones se pueden mostrar, ocultar y reordenar junto con los demás iconos.
+Desde 0.8.2, el engranaje abre la configuración de la barra lateral y los tableros en un panel compacto. Se retiran los accesos duplicados de tres puntos y cuadrícula. El modo oscuro forzado se activa dentro de ese panel. Los accesos a Descargas y Extensiones se pueden mostrar, ocultar y reordenar junto con los demás iconos.
 
 Favoritos y los paneles web comparten el espacio lateral: al abrir uno se oculta el anterior. Desde 0.6.0, los documentos laterales permanecen abiertos en segundo plano al cambiar de pestaña o de servicio. Al volver se reutiliza el mismo documento, conservando texto, sesión y navegación. La caché pertenece a la ventana y acaba al cerrarla; no promete conservar formularios sin guardar después de reiniciar. Las páginas internas de configuración, descargas y extensiones tienen estilos adaptados a anchos pequeños. Los sitios HTTP/HTTPS nuevos usan vista móvil por defecto; el botón Celular/Escritorio conserva la elección por sitio. La adaptación de sitios externos también depende de su diseño; un sitio sin diseño adaptable puede verse reducido o requerir desplazamiento.
 
@@ -28,7 +28,7 @@ Configuración → Aspecto visual permite activar el minirreproductor automátic
 
 El primer inicio ofrece importar datos, cambiar nombre y foto del perfil y gestionar contraseñas mediante las herramientas nativas. El botón Perfil y sincronización vuelve a abrir el asistente. La sincronización heredada genera códigos, pero las pruebas de conexión informaron error de servidor; esta compilación no incorpora una clave de servicios autorizada. No se ha validado transferencia de marcadores ni contraseñas entre equipos.
 
-Google se selecciona una vez como buscador de inicio, ventanas normales y privadas; después se conserva la elección del usuario. Tor mantiene su configuración separada. El botón de medio círculo del lateral alterna el mismo modo oscuro forzado de Aspecto visual. Los sitios añadidos al panel reciben inicialmente protección nativa activa con filtrado agresivo; los cambios posteriores por sitio se respetan. No se garantiza eliminar todos los anuncios de YouTube.
+Google se selecciona una vez como buscador de inicio, ventanas normales y privadas; después se conserva la elección del usuario. Tor mantiene su configuración separada. El panel de configuración lateral incluye el mismo modo oscuro forzado de Aspecto visual. Los sitios añadidos al panel reciben inicialmente protección nativa activa con filtrado agresivo; los cambios posteriores por sitio se respetan. No se garantiza eliminar todos los anuncios de YouTube.
 
 La caché experimental DAT de filtros queda desactivada: en un perfil nuevo su espera del catálogo impedía cargar incluso los filtros personalizados. El bloqueo sigue usando el motor nativo; las pruebas no desactivan Shields. Las listas descargadas se vuelven a procesar al iniciar.
 

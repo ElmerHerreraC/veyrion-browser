@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 #include "base/functional/bind.h"
+#include "base/no_destructor.h"
 #include "base/task/thread_pool.h"
 #include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/infobars/confirm_infobar_creator.h"
@@ -12,28 +13,41 @@
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 #include "components/infobars/content/content_infobar_manager.h"
 #include "components/infobars/core/confirm_infobar_delegate.h"
+#include "components/infobars/core/infobar.h"
 
 class VeyrionUpdateNotification : public ConfirmInfoBarDelegate {
  public:
   explicit VeyrionUpdateNotification(std::string version) : version_(std::move(version)) {}
   // Fork-local identifier, registered in browser/enums.xml after Brave's 512.
-  InfoBarIdentifier GetIdentifier() const override {
-    return static_cast<InfoBarIdentifier>(513);
-  }
-  std::u16string GetMessageText() const override {
-    return u"Nueva versión de Veyrion " + base::UTF8ToUTF16(version_) +
-        u" disponible. Se descargará y verificará antes de reiniciar.";
-  }
-  int GetButtons() const override { return BUTTON_OK; }
-  std::u16string GetButtonLabel(InfoBarButton) const override { return u"Actualizar y reiniciar"; }
-  bool Accept() override {
-    base::ThreadPool::PostTask(FROM_HERE, {base::MayBlock()},
-        base::BindOnce([] { VeyrionUpdateState("apply-restart"); }));
-    return true;
-  }
+  InfoBarIdentifier GetIdentifier() const override;
+  std::u16string GetMessageText() const override;
+  int GetButtons() const override;
+  std::u16string GetButtonLabel(InfoBarButton) const override;
+  bool Accept() override;
+  bool ShouldExpire(const NavigationDetails& details) const override;
  private:
   std::string version_;
 };
+
+inline infobars::InfoBarDelegate::InfoBarIdentifier VeyrionUpdateNotification::GetIdentifier() const {
+  return static_cast<InfoBarIdentifier>(513);
+}
+inline std::u16string VeyrionUpdateNotification::GetMessageText() const {
+  return u"Nueva versión de Veyrion " + base::UTF8ToUTF16(version_) +
+      u" disponible. Se descargará y verificará antes de reiniciar.";
+}
+inline int VeyrionUpdateNotification::GetButtons() const { return BUTTON_OK; }
+inline std::u16string VeyrionUpdateNotification::GetButtonLabel(InfoBarButton) const {
+  return u"Actualizar y reiniciar";
+}
+inline bool VeyrionUpdateNotification::Accept() {
+  base::ThreadPool::PostTask(FROM_HERE, {base::MayBlock()},
+      base::BindOnce([] { VeyrionUpdateState("apply-restart"); }));
+  return true;
+}
+inline bool VeyrionUpdateNotification::ShouldExpire(const NavigationDetails&) const {
+  return false;
+}
 
 inline void VeyrionHandleUpdateNotification(BrowserWindowInterface* browser,
                                            const base::DictValue& state) {
@@ -41,7 +55,8 @@ inline void VeyrionHandleUpdateNotification(BrowserWindowInterface* browser,
   const auto* version = state.FindString("detail");
   if (!status || !version) return;
   if (*status == "ready-on-close" && state.FindBool("restartRequested").value_or(false)) {
-    static std::string restarting;
+    static base::NoDestructor<std::string> restarting_storage;
+    auto& restarting = *restarting_storage;
     if (restarting == *version) return;
     restarting = *version;
     base::ThreadPool::PostTaskAndReplyWithResult(FROM_HERE,
@@ -49,16 +64,18 @@ inline void VeyrionHandleUpdateNotification(BrowserWindowInterface* browser,
         base::BindOnce(&VeyrionSaveRestartArguments, *version),
         base::BindOnce([](bool saved) {
           if (saved) chrome::AttemptExit();
-          else restarting.clear();
+          else restarting_storage->clear();
         }));
     return;
   }
-  static std::string notified;
+  static base::NoDestructor<std::string> notified_storage;
+  auto& notified = *notified_storage;
   if (*status != "available" || notified == *version) return;
   auto* contents = browser->GetTabStripModel()->GetActiveWebContents();
+  if (!contents || contents->IsLoading() || contents->GetLastCommittedURL().is_empty()) return;
   auto* manager = contents ? infobars::ContentInfoBarManager::FromWebContents(contents) : nullptr;
   if (!manager) return;
-  notified = *version;
-  manager->AddInfoBar(CreateConfirmInfoBar(std::make_unique<VeyrionUpdateNotification>(*version)));
+  if (manager->AddInfoBar(CreateConfirmInfoBar(std::make_unique<VeyrionUpdateNotification>(*version))))
+    notified = *version;
 }
 #endif

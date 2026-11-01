@@ -24,4 +24,4 @@ Publicar en el tag `v<versión>` los tres archivos de `dist`: `Veyrion-Setup-x64
 
 ## Modo oscuro web
 
-En `chrome://settings/appearance`, activar **Forzar modo oscuro en páginas web**. Usa `webkit.webprefs.force_dark_mode_enabled`, observado por las pestañas del navegador y persistido por perfil. No depende del modo claro/oscuro de la ventana ni de scripts que lean el contenido de las páginas. Algunos sitios pueden verse mal; desactivarlo restaura su representación normal. Puede ser necesario recargar una pestaña abierta.
+En la tuerca de la barra lateral, activar **Forzar modo oscuro en páginas web**; también está en `chrome://settings/appearance`. Usa `webkit.webprefs.force_dark_mode_enabled`, observado por las pestañas del navegador y persistido por perfil. No depende del modo claro/oscuro de la ventana ni de scripts que lean el contenido de las páginas. Algunos sitios pueden verse mal; desactivarlo restaura su representación normal. Puede ser necesario recargar una pestaña abierta.
