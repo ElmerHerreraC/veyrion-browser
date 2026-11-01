@@ -31,7 +31,7 @@ void BraveAppearanceHandler::HandleVeyrionAppearance(const base::ListValue& args
   AllowJavascript();
   const auto& request = args[1].GetDict();
   if (const auto* action = request.FindString("updateAction")) {
-    if (profile_->IsOffTheRecord() || (*action != "status" && *action != "check" && *action != "apply")) {
+    if (profile_->IsOffTheRecord() || (*action != "status" && *action != "check" && *action != "apply" && *action != "apply-restart")) {
       RejectJavascriptCallback(args[0], base::Value("Acción no disponible")); return;
     }
     base::ThreadPool::PostTaskAndReplyWithResult(FROM_HERE, {base::MayBlock()},

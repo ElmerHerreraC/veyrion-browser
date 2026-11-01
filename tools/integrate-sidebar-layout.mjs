@@ -56,26 +56,19 @@ void SidebarWebPanelController::CloseWebPanel() {`)
 #include "brave/browser/ui/sidebar/sidebar_web_panel_controller.h"
 #include "brave/components/sidebar/browser/sidebar_item.h"
 #include "chrome/browser/ui/browser_tabstrip.h"`).replace('  sidebar_settings_view_ = AddChildView(',`  // Veyrion: dedicated sidebar-only options, separate from browser appearance.
-  auto* options = AddChildView(std::make_unique<SidebarButtonView>(u"Configurar barra lateral y tableros"));
-  options->SetImageModel(views::Button::STATE_NORMAL,
-      ui::ImageModel::FromVectorIcon(kLeoMoreVerticalIcon, kColorSidebarButtonBase,
-                                    SidebarButtonView::kDefaultIconSize));
-  options->SetCallback(base::BindRepeating(&SidebarControlView::OnButtonPressed,
-                                         base::Unretained(this), options));
   sidebar_settings_view_ = AddChildView(`)
+    s=s.replace(/  auto\* options = AddChildView\([\s\S]*?base::Unretained\(this\), options\)\);\r?\n/,'')
+    s=s.replace('l10n_util::GetStringUTF16(IDS_SIDEBAR_SETTINGS_BUTTON_TOOLTIP)', 'u"Configurar barra lateral y tableros"')
     const start=s.indexOf('void SidebarControlView::OnButtonPressed('),end=s.indexOf('\nvoid SidebarControlView::Update()',start)
     if(start<0||end<0)throw Error('Sidebar controls changed upstream')
     return s.slice(0,start)+`void SidebarControlView::OnButtonPressed(views::View* view) {
   // Veyrion unified settings shortcut.
+  // Veyrion gear is the single entry to sidebar and workspace options.
+  if (view != sidebar_settings_view_) return;
   auto* controller = browser_->GetFeatures().sidebar_controller()->GetWebPanelController();
-  if (view != sidebar_settings_view_) {
-    controller->ToggleWebPanel(sidebar::SidebarItem::Create(
+  controller->ToggleWebPanel(sidebar::SidebarItem::Create(
         GURL("chrome://settings/appearance?veyrionSidebar=1"), u"Barra lateral y tableros",
         sidebar::SidebarItem::Type::kTypeWeb, sidebar::SidebarItem::BuiltInItemType::kNone, true));
-    return;
-  }
-  controller->DismissVeyrionPanel();
-  ShowSingletonTabOverwritingNTP(browser_, GURL("chrome://settings/appearance"));
 }
 `+s.slice(end)
   })

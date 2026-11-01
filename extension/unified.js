@@ -5,11 +5,12 @@ $('.dialog-header .eyebrow').textContent='INICIO'
 $('.dialog-header h2').textContent='Personalizar inicio'
 $('#customize-top').hidden=true
 for(const control of [$('#apply-browser-color'),$('[data-setting=syncNativeTheme]')?.closest('label'),$('[data-page="settings/appearance"]'),$('#browser-color-status'),$('[data-panel=updates]')])if(control)control.hidden=true
-const destinations=document.createElement('div');destinations.className='settings-destinations'
+const destinations=$('.settings-tabs');destinations.classList.add('settings-destinations')
+const browserTabs=document.createDocumentFragment()
 for(const [label,url] of [['Ventana y colores','chrome://settings/appearance'],['Barra lateral e iconos','chrome://settings/appearance#veyrion-icons'],['Punteros','chrome://settings/appearance#veyrion-cursor'],['Actualizaciones','chrome://settings/appearance?veyrionUpdates=1']]){
- const button=document.createElement('button');button.className='outline';button.textContent=label;button.addEventListener('click',()=>{if(globalThis.chrome?.tabs)chrome.tabs.create({url});else alert('Abre esta dirección en Veyrion: '+url)});destinations.append(button)
+ const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',()=>{if(globalThis.chrome?.tabs)chrome.tabs.create({url});else alert('Abre esta dirección en Veyrion: '+url)});browserTabs.append(button)
 }
-dialog.querySelector('.dialog-header').after(destinations)
+destinations.prepend(browserTabs)
 $('[data-panel=visual]').textContent='Fondo y colores'
 $('[data-panel=layout]').textContent='Diseño'
 const gallery=document.createElement('div');gallery.className='wallpaper-gallery';$('[data-section=visual]').prepend(gallery)

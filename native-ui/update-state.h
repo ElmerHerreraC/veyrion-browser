@@ -10,6 +10,29 @@
 #include "base/process/launch.h"
 #include "base/values.h"
 #include "base/version.h"
+#include "base/json/json_writer.h"
+#include "base/process/process_handle.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/utf_string_conversions.h"
+
+inline bool VeyrionSaveRestartArguments(const std::string& version) {
+  if (!base::Version(version).IsValid()) return false;
+  base::FilePath cache;
+  if (!base::PathService::Get(base::DIR_LOCAL_APP_DATA, &cache)) return false;
+  cache = cache.AppendASCII("Veyrion").AppendASCII("Updates");
+  if (!base::CreateDirectory(cache)) return false;
+  base::ListValue args;
+  const auto* command = base::CommandLine::ForCurrentProcess();
+  for (const auto* name : {"user-data-dir", "profile-directory"}) {
+    if (command->HasSwitch(name))
+      args.Append("--" + std::string(name) + "=" + base::WideToUTF8(command->GetSwitchValueNative(name)));
+  }
+  std::string json;
+  if (!base::JSONWriter::Write(args, &json) ||
+      !base::WriteFile(cache.AppendASCII("restart-" + version + "-" +
+          base::NumberToString(base::GetCurrentProcId()) + ".json"), json)) return false;
+  return true;
+}
 
 // Called only on a MayBlock worker. No arbitrary command, path or URL is accepted.
 inline base::DictValue VeyrionUpdateState(const std::string& action) {
@@ -41,7 +64,7 @@ inline base::DictValue VeyrionUpdateState(const std::string& action) {
     if (!next_version.IsValid() || (installed_version.IsValid() && next_version <= installed_version))
       result.Set("state", "current");
   }
-  if (action == "check" || action == "apply") {
+  if (action == "check" || action == "apply" || action == "apply-restart") {
     base::CommandLine command(directory.AppendASCII("updater").AppendASCII("VeyrionUpdate.exe"));
     command.AppendArg(action);
     base::LaunchOptions options;

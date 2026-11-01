@@ -13,18 +13,20 @@ test('El host GUI no crea consola y libera su ejecutable durante la instalación
   fs.copyFileSync('updater/VeyrionUpdate.exe',executable)
   const bytes=fs.readFileSync(executable),pe=bytes.readUInt32LE(0x3c)
   assert.equal(bytes.readUInt16LE(pe+24+68),2,'El ejecutable debe usar el subsistema Windows GUI')
-  fs.writeFileSync(path.join(directory,'update.ps1'),`param([switch]$Apply)
+  fs.writeFileSync(path.join(directory,'update.ps1'),`param([switch]$Apply,[switch]$Restart)
 Add-Type -Namespace Veyrion -Name ConsoleCheck -MemberDefinition '[System.Runtime.InteropServices.DllImport("kernel32.dll")] public static extern System.IntPtr GetConsoleWindow();'
 if([Veyrion.ConsoleCheck]::GetConsoleWindow() -ne [IntPtr]::Zero){exit 7}
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'result.txt'),[string]$Apply)
+[IO.File]::WriteAllText((Join-Path $PSScriptRoot 'restart.txt'),[string]$Restart)
 `)
-  for(const [action,expected]of [['check','False'],['apply','True']]){
+  for(const [action,expected]of [['check','False'],['apply','True'],['apply-restart','True']]){
     const output=path.join(directory,'result.txt')
     if(fs.existsSync(output))fs.unlinkSync(output)
     const result=spawnSync(executable,[action],{windowsHide:true,encoding:'utf8'})
     assert.equal(result.status,0,result.stderr)
     for(let attempt=0;attempt<100&&!fs.existsSync(output);attempt++)await new Promise(resolve=>setTimeout(resolve,50))
     assert.equal(fs.readFileSync(output,'utf8'),expected)
+    assert.equal(fs.readFileSync(path.join(directory,'restart.txt'),'utf8'),action==='apply-restart'?'True':'False')
   }
   fs.writeFileSync(path.join(directory,'update.ps1'),`param([switch]$Apply)
 $ErrorActionPreference='Stop'

@@ -1,4 +1,4 @@
-param([switch]$Apply)
+param([switch]$Apply, [switch]$Restart)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'policy.ps1')
 $script:downloadVersion = $null
@@ -11,9 +11,28 @@ $mutex = New-Object Threading.Mutex($false, ('Local\VeyrionUpdate-' + $identity)
 $locked = $false
 function Write-UpdateStatus([string]$State, [string]$Detail, [long]$Downloaded = 0, [long]$Total = 0) {
   $statusPath = Join-Path $cache 'status.json'
-  $json = @{state=$State;detail=$Detail;downloaded=$Downloaded;total=$Total;checkedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json
+  $json = @{state=$State;detail=$Detail;downloaded=$Downloaded;total=$Total;restartRequested=[bool]$Restart;checkedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json
   [IO.File]::WriteAllText(($statusPath + '.tmp'), $json, (New-Object Text.UTF8Encoding($false)))
   Move-Item -LiteralPath ($statusPath + '.tmp') -Destination $statusPath -Force
+}
+function Restart-Veyrion([string]$Version) {
+  $seen = @{}
+  foreach ($file in Get-ChildItem -LiteralPath $cache -Filter ('restart-' + $Version + '-*.json') -File) {
+    if ($file.Length -gt 32768) { throw 'Invalid restart record.' }
+    $decoded = (Get-Content -LiteralPath $file.FullName -Raw) | ConvertFrom-Json
+    $arguments = @()
+    if ($null -ne $decoded) { $arguments = @($decoded) }
+    if ($arguments.Count -gt 2) { throw 'Invalid restart argument count.' }
+    $quoted = @('--restore-last-session')
+    foreach ($argument in $arguments) {
+      if ($argument -isnot [string] -or $argument -cnotmatch '^--(user-data-dir|profile-directory)=.+' -or $argument.Contains('"') -or $argument.Contains("`r") -or $argument.Contains("`n")) { throw 'Invalid restart argument.' }
+      $quoted += '"' + ($argument -replace '(\\+)$','$1$1') + '"'
+    }
+    $key = ConvertTo-Json -InputObject $arguments -Compress
+    if ($seen.ContainsKey($key)) { continue }
+    $seen[$key] = $true
+    Start-Process -FilePath $installedExe -ArgumentList ($quoted -join ' ') -WindowStyle Normal | Out-Null
+  }
 }
 function Save-BoundedDownload([string]$Url, [string]$Path, [long]$Limit) {
   $request = [Net.HttpWebRequest]::Create($Url)
@@ -85,5 +104,6 @@ try {
   $current = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'config.json') -Raw | ConvertFrom-Json
   if ($current.version -cne $manifest.version) { throw 'Installed version did not advance.' }
   Write-UpdateStatus 'installed' $manifest.version
+  if ($Restart) { Restart-Veyrion $manifest.version }
 } catch { Write-UpdateStatus 'error' $_.Exception.Message; exit 1 }
 finally { if ($locked) { $mutex.ReleaseMutex() }; $mutex.Dispose() }

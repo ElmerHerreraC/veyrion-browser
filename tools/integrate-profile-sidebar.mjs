@@ -45,12 +45,6 @@ export function integrateProfileSidebar(source){
   workspace_contents->SetLayoutManager(std::make_unique<views::BoxLayout>(views::BoxLayout::Orientation::kVertical));
   veyrion_workspaces_ = workspace_scroll->SetContents(std::move(workspace_contents));
   workspace_scroll->SetVisible(!browser_->GetProfile()->IsOffTheRecord());
-  auto* manage_workspaces = AddChildView(std::make_unique<SidebarButtonView>(u"Añadir o administrar tableros"));
-  manage_workspaces->SetImageModel(views::Button::STATE_NORMAL,
-      ui::ImageModel::FromVectorIcon(kLeoGrid04Icon, kColorSidebarButtonBase, SidebarButtonView::kDefaultIconSize));
-  manage_workspaces->SetCallback(base::BindRepeating(&SidebarControlView::OnButtonPressed,
-      base::Unretained(this), manage_workspaces));
-  manage_workspaces->SetVisible(!browser_->GetProfile()->IsOffTheRecord());
   sidebar_items_view_ = AddChildView(`)
       s=s.replace('  veyrion_update_button_ = AddChildView(std::make_unique<views::LabelButton>(',`  veyrion_dark_button_ = AddChildView(std::make_unique<SidebarButtonView>(u"Forzar modo oscuro en páginas web"));
   veyrion_dark_button_->SetText(u"◐");
@@ -67,6 +61,7 @@ export function integrateProfileSidebar(source){
   veyrion_update_button_->SetCallback(`)
       s=s.replace('}, base::Unretained(this)), u"↑"));','}, base::Unretained(this)));')
     }
+    s=s.replace(/  auto\* manage_workspaces = [\s\S]*?  manage_workspaces->SetVisible\(!browser_->GetProfile\(\)->IsOffTheRecord\(\)\);\r?\n/,'')
     s=s.replace(/^.*veyrion_dark_button_->label\(\)->SetFontList.*\r?\n/gm,'').replaceAll('const auto tooltip =','const char16_t* tooltip =')
     if(!s.includes('#include "ui/views/controls/label.h"'))s=s.replace('#include "base/check.h"','#include "base/check.h"\n#include "ui/views/controls/label.h"')
     s=s.replace('self->veyrion_update_button_->SetText(available ? u"↑ •" : u"↑");',`self->veyrion_update_button_->SetVisible(available);

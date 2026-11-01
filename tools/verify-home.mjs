@@ -54,6 +54,8 @@ try{
   }
   await evaluate('document.querySelector("#start-customize").click()')
   await until('[...document.querySelectorAll(".built-in-gallery img")].every(image=>image.complete&&image.naturalWidth>0)')
+  assert.ok(await evaluate(`(()=>{const nav=document.querySelector('.settings-tabs.settings-destinations');return nav&&nav.querySelectorAll('button').length>=9&&[...nav.querySelectorAll('button')].every(button=>getComputedStyle(button).borderRadius==='0px'&&getComputedStyle(button).borderTopWidth==='0px')})()`),'Todos los accesos de personalización deben compartir el estilo de pestaña')
+  await fs.writeFile(path.join(root,`artifacts/settings-tabs-${releaseTag}.png`),Buffer.from((await cdp('Page.captureScreenshot',{format:'png'})).data,'base64'))
   for(const name of ['mountains','coast','planet','nebula']){
     await evaluate(`document.querySelector('[data-wallpaper-preset="${name}"]').click()`)
     assert.ok(await evaluate(`getComputedStyle(document.body,'::after').backgroundImage.includes('wallpapers/${name}.svg')`))

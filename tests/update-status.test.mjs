@@ -12,6 +12,7 @@ test('El estado de actualización publica progreso y errores como JSON UTF-8 leg
   const script=path.join(folder,'test.ps1')
   fs.writeFileSync(script,`\ufeff$ErrorActionPreference='Stop'
 $cache=$PSScriptRoot
+$Restart=$false
 ${statusFunction}
 Write-UpdateStatus 'downloading' '0.8.0' 52428800 104857600
 Copy-Item (Join-Path $cache 'status.json') (Join-Path $cache 'progress.json')

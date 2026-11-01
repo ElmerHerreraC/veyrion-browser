@@ -40,7 +40,7 @@ class VeyrionNativeAppearance extends HTMLElement {
       <button class="theme" data-color="55741" style="--accent:#00d9bd"><span class="preview"></span><span>Personalizado <b>○</b></span></button>
     </div><div class="modes"><button data-mode="light">Claro</button><button data-mode="system">Auto</button><button data-mode="dark">Oscuro</button></div>
     <label class="row">Color de acento de la ventana<input type="color" id="accent" aria-label="Color de acento de la ventana"></label></div>
-    <h2 class="general">PÁGINAS WEB</h2><div class="card general">
+    <h2>PÁGINAS WEB</h2><div class="card">
     <label class="row">Forzar modo oscuro en páginas web<input id="force-dark" type="checkbox"></label>
     <p>Oscurece las páginas que no ofrecen un tema oscuro mediante el motor del navegador. Es independiente del tema de la ventana. Si una página se ve mal, desactiva esta opción. Recarga las páginas abiertas si es necesario.</p></div>
     <h2>TABLEROS · ESPACIOS DE PESTAÑAS</h2><div class="card"><p>Cada tablero mantiene su propia ventana y sus pestañas abiertas. Cambiar de tablero no cierra los demás.</p><div id="workspaces"></div><input id="workspace-name" maxlength="60" placeholder="Nombre del tablero" aria-label="Nombre del tablero"><div class="row"><button class="arrow" id="workspace-create">Añadir tablero</button><button class="arrow" id="workspace-rename">Nombrar este tablero</button></div></div>
@@ -75,14 +75,14 @@ class VeyrionNativeAppearance extends HTMLElement {
         message.textContent=this.state_?.cursorMode===mode?'Puntero guardado. Mueve el ratón para verlo.':'No se aplicó: comprueba tamaño y punto de clic.'
       }catch(error){message.textContent=String(error)}
     })
-    const protection=document.createElement('label');protection.className='row';protection.textContent='Bloqueo agresivo de anuncios y rastreadores'
+    const protection=document.createElement('label');protection.className='row general';protection.textContent='Bloqueo agresivo de anuncios y rastreadores'
     const aggressive=document.createElement('input');aggressive.type='checkbox';aggressive.id='aggressive-ads';aggressive.addEventListener('change',()=>this.request_({aggressiveAds:aggressive.checked}));protection.append(aggressive);this.root_.getElementById('force-dark')!.closest('.card')!.append(protection)
     const video=document.createElement('label');video.className='row general';video.textContent='Minirreproductor automático al cambiar de pestaña'
     const autoPip=document.createElement('input');autoPip.type='checkbox';autoPip.id='auto-pip';autoPip.addEventListener('change',()=>this.request_({autoPip:autoPip.checked}));video.append(autoPip)
     this.root_.getElementById('force-dark')!.closest('.card')!.append(video)
-    const updates=document.createElement('div');updates.className='card general';updates.id='updates';updates.appendChild(braveHtml`<h2>ACTUALIZACIONES DE VEYRION</h2><p id="update-state" role="status">Consultando estado local…</p><p>Las comprobaciones se realizan sin ventanas de consola. Pulsa Actualizar para descargar la versión firmada e instalarla cuando cierres Veyrion.</p><div class="row"><button class="arrow" id="update-check">Buscar actualizaciones</button><button class="arrow" id="update-apply" hidden>Actualizar al cerrar</button><a href="https://github.com/ElmerHerreraC/veyrion-browser/releases" target="_blank" rel="noreferrer">Ver novedades</a></div>`)
+    const updates=document.createElement('div');updates.className='card general';updates.id='updates';updates.appendChild(braveHtml`<h2>ACTUALIZACIONES DE VEYRION</h2><p id="update-state" role="status">Consultando estado local…</p><p>Las comprobaciones se realizan sin ventanas de consola. Pulsa Actualizar y reiniciar para descargar y verificar la versión. Después se cerrará Veyrion de forma normal y se reabrirá con la sesión normal guardada.</p><div class="row"><button class="arrow" id="update-check">Buscar actualizaciones</button><button class="arrow" id="update-apply" hidden>Actualizar y reiniciar</button><a href="https://github.com/ElmerHerreraC/veyrion-browser/releases" target="_blank" rel="noreferrer">Ver novedades</a></div>`)
     this.root_.append(updates)
-    for(const action of ['check','apply'])this.root_.getElementById('update-'+action)!.addEventListener('click',()=>this.updateStatus_(action))
+    for(const action of ['check','apply'])this.root_.getElementById('update-'+action)!.addEventListener('click',()=>this.updateStatus_(action==='apply'?'apply-restart':action))
     this.updateStatus_('status')
     this.updateTimer_=window.setInterval(()=>this.updateStatus_('status'),1000)
     if(new URLSearchParams(location.search).has('veyrionUpdates'))setTimeout(()=>updates.scrollIntoView({block:'start'}),400)
@@ -100,9 +100,9 @@ class VeyrionNativeAppearance extends HTMLElement {
   private async updateStatus_(action:string){
     try{
       const status=this.root_.getElementById('update-state')!
-      if(action!=='status')status.textContent=action==='apply'?'Iniciando descarga de la actualización…':'Buscando actualizaciones…'
+      if(action!=='status')status.textContent=action.startsWith('apply')?'Iniciando descarga de la actualización…':'Buscando actualizaciones…'
       const value=await veyrionSend<{state:string;detail?:string;installed?:string;checkedAt?:string;downloaded?:number;total?:number}>('veyrionAppearance',{updateAction:action})
-      const messages:Record<string,string>={current:'Estás al día.',available:'Nueva versión '+(value.detail||'')+' disponible.',downloading:'Descargando y verificando la actualización…','ready-on-close':'Actualización lista. Cierra Veyrion cuando quieras instalarla.',installed:'Actualización instalada.',checking:'Buscando actualizaciones…',starting:'Preparando actualización…',error:'No se pudo completar la actualización. Puedes volver a intentarlo.',unchecked:'Todavía no hay una comprobación registrada.'}
+      const messages:Record<string,string>={current:'Estás al día.',available:'Nueva versión '+(value.detail||'')+' disponible.',downloading:'Descargando y verificando la actualización…','ready-on-close':'Actualización verificada. Preparando el reinicio; atiende cualquier aviso de una pestaña para continuar.',installed:'Actualización instalada.',checking:'Buscando actualizaciones…',starting:'Preparando actualización…',error:'No se pudo completar la actualización. Puedes volver a intentarlo.',unchecked:'Todavía no hay una comprobación registrada.'}
       messages['verifying']='Verificando integridad y firma del instalador…'
       messages['installing']='Instalando actualización…'
       if(value.state==='downloading'&&value.total)messages['downloading']='Descargando: '+Math.min(100,Math.floor((value.downloaded||0)*100/value.total))+'% ('+((value.downloaded||0)/1048576).toFixed(1)+' / '+(value.total/1048576).toFixed(1)+' MB).'

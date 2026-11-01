@@ -296,6 +296,7 @@ try {
         if(toolUrl.includes('veyrionSidebar')){
           const content=(await rpc('Runtime.evaluate',{expression:`(()=>{const find=root=>root.querySelector('veyrion-native-appearance')||[...root.querySelectorAll('*')].map(e=>e.shadowRoot&&find(e.shadowRoot)).find(Boolean);const host=find(document);return {width:host.getBoundingClientRect().width,scroll:host.shadowRoot.querySelector('#workspace-name').getBoundingClientRect().right}})()`,returnByValue:true})).result.value
           assert.ok(content.width<=size.width&&content.scroll<=size.width,`El formulario lateral debe caber completamente: ${JSON.stringify(content)} / ${size.width}`)
+          assert.ok((await rpc('Runtime.evaluate',{expression:`(()=>{const find=root=>root.querySelector('veyrion-native-appearance')||[...root.querySelectorAll('*')].map(e=>e.shadowRoot&&find(e.shadowRoot)).find(Boolean);return find(document).shadowRoot.querySelector('#force-dark').getClientRects().length>0})()`,returnByValue:true})).result.value,'El modo oscuro debe estar visible en la configuración lateral')
         }
         const shot=await rpc('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})
         await fs.writeFile(path.join(root,'artifacts/panel-'+(toolUrl.includes('downloads')?'downloads':toolUrl.includes('extensions')?'extensions':'options')+'-050.png'),Buffer.from(shot.data,'base64'))
