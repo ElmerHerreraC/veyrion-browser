@@ -1,4 +1,4 @@
-param([switch]$AllowUpgrade)
+param([switch]$AllowUpgrade, [switch]$QuickVerify)
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
 $setup = Join-Path $project 'dist\Veyrion-Setup-x64.exe'
@@ -36,7 +36,12 @@ $updateConfig = Get-Content -LiteralPath (Join-Path $installedDir 'updater\confi
 $expectedVersion = (Get-Content -LiteralPath (Join-Path $project 'package.json') -Raw | ConvertFrom-Json).version
 if ($updateConfig.version -ne $expectedVersion) { throw 'El actualizador tiene otra versión instalada.' }
 $env:VEYRION_NATIVE_VERIFY = '1'
-& node (Join-Path $PSScriptRoot 'verify.mjs')
+if ($QuickVerify) {
+  & node (Join-Path $PSScriptRoot 'verify-blocking-smoke.mjs')
+} else {
+  & node (Join-Path $PSScriptRoot 'verify.mjs')
+}
 if ($LASTEXITCODE -ne 0) { throw 'Falló la prueba del navegador instalado.' }
 @{ passed=$true; installedExecutable=$installedExe; productName=$info.ProductName; version=$info.ProductVersion; uninstallerPresent=$true } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $project 'artifacts\installation-verification.json')
 Write-Output 'Instalación verificada. Veyrion queda instalado y disponible en el escritorio.'
+
