@@ -2,7 +2,7 @@ import {sendWithPromise as veyrionSend} from 'chrome://resources/js/cr.js'
 
 interface VeyrionAppearance {
   cursorMode:string; cursorPng:string; cursorX:number; cursorY:number; aggressiveAds:boolean;
-  mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean; autoPip: boolean;
+  mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean; autoPip: boolean; suspendPanels: boolean;
   items: Array<{index: number; title: string; visible: boolean; icon: string}>;
   workspaces: Array<{id:number; name:string; tabs:number; current:boolean}>;
 }
@@ -80,6 +80,10 @@ class VeyrionNativeAppearance extends HTMLElement {
     const video=document.createElement('label');video.className='row general';video.textContent='Minirreproductor automático al cambiar de pestaña'
     const autoPip=document.createElement('input');autoPip.type='checkbox';autoPip.id='auto-pip';autoPip.addEventListener('change',()=>this.request_({autoPip:autoPip.checked}));video.append(autoPip)
     this.root_.getElementById('force-dark')!.closest('.card')!.append(video)
+    const economy=document.createElement('label');economy.className='row';economy.textContent='Ahorrar recursos de paneles ocultos'
+    const suspension=document.createElement('input');suspension.type='checkbox';suspension.id='suspend-panels';suspension.addEventListener('change',()=>this.request_({suspendPanels:suspension.checked}));economy.append(suspension)
+    this.root_.getElementById('force-dark')!.closest('.card')!.append(economy)
+    const economyHelp=document.createElement('p');economyHelp.className='help';economyHelp.textContent='Al ocultar un panel se pausa su actividad; sus avisos pueden retrasarse. Audio y captura activos se conservan. Desactiva esta opción y reabre el panel si necesitas actividad continua.';economy.after(economyHelp)
     const updates=document.createElement('div');updates.className='card general';updates.id='updates';updates.appendChild(braveHtml`<h2>ACTUALIZACIONES DE VEYRION</h2><p id="update-state" role="status">Consultando estado local…</p><p>Las comprobaciones se realizan sin ventanas de consola. Pulsa Actualizar y reiniciar para descargar y verificar la versión. Después se cerrará Veyrion de forma normal y se reabrirá con la sesión normal guardada.</p><div class="row"><button class="arrow" id="update-check">Buscar actualizaciones</button><button class="arrow" id="update-apply" hidden>Actualizar y reiniciar</button><a href="https://github.com/ElmerHerreraC/veyrion-browser/releases" target="_blank" rel="noreferrer">Ver novedades</a></div>`)
     this.root_.append(updates)
     for(const action of ['check','apply'])this.root_.getElementById('update-'+action)!.addEventListener('click',()=>this.updateStatus_(action==='apply'?'apply-restart':action))
@@ -132,6 +136,7 @@ class VeyrionNativeAppearance extends HTMLElement {
     ;(this.root_.getElementById('colored') as HTMLInputElement).checked=state.colored
     ;(this.root_.getElementById('force-dark') as HTMLInputElement).checked=state.forceDark
     ;(this.root_.getElementById('auto-pip') as HTMLInputElement).checked=state.autoPip
+    ;(this.root_.getElementById('suspend-panels') as HTMLInputElement).checked=state.suspendPanels
     const list=this.root_.getElementById('icons')!;list.replaceChildren()
     for(const item of state.items){
       const row=document.createElement('div');row.className='row'

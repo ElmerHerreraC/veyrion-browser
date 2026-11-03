@@ -17,7 +17,9 @@ if(native){await fs.mkdir(path.join(profile,'Default'),{recursive:true});await f
 await fs.mkdir(path.join(root, 'artifacts'), { recursive: true })
 const child = spawn(executable, [
   ...(process.env.VEYRION_WINDOWED_VERIFY === '1' ? ['--window-size=1500,1000'] : ['--headless=new']), '--remote-debugging-port=0', `--user-data-dir=${profile}`,
-  ...(loadExtensions.length ? [`--load-extension=${loadExtensions.join(',')}`] : []), '--no-first-run', '--no-default-browser-check', 'brave://newtab/'
+  ...(loadExtensions.length ? [`--load-extension=${loadExtensions.join(',')}`] : []),
+  ...(process.env.VEYRION_BLOCKING_VERIFY==='1'?['--host-resolver-rules=MAP veyrion-control.invalid 127.0.0.1, MAP veyrion-ad-test.ad.doubleclick.net 127.0.0.1','--no-proxy-server']:[]),
+  '--no-first-run', '--no-default-browser-check', 'brave://newtab/'
 ], { stdio: ['ignore','ignore','pipe'], windowsHide: process.env.VEYRION_WINDOWED_VERIFY !== '1' })
 child.stderr.on('data', data => { fs.appendFile(path.join(root,'artifacts/native-runtime-stderr.log'),data).catch(()=>{}) })
 child.on('exit', (code,signal) => { if(process.env.VEYRION_VERIFY_TRACE==='1') console.log('BROWSER EXIT',code,signal) })
@@ -27,12 +29,13 @@ let tlsServer
 let dragServiceOrder
 let sequence = 0
 const pending = new Map()
+const blockedRequests = []
 const testServer = createServer((request, response) => {
   if (request.url === '/check.js') {
     response.writeHead(200, { 'content-type': 'text/javascript' })
     response.end('document.body.dataset.executed="yes"')
   } else {
-    response.writeHead(200, { 'content-type': 'text/html', 'content-security-policy': "default-src 'self'; script-src 'self'" })
+    response.writeHead(200, { 'content-type': 'text/html', 'content-security-policy': "default-src 'self'; script-src 'self'; connect-src 'self' http://veyrion-ad-test.ad.doubleclick.net:*" })
     response.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veyrion navigation check</title><body>Navigation works<p><label>Entrada de prueba <input id="test-input" placeholder="Prueba de foco del panel"></label></p><script src="/check.js"></script>')
   }
 })
@@ -71,6 +74,7 @@ try {
   await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject })
   socket.onmessage = event => {
     const result = JSON.parse(event.data)
+    if(result.method==='Network.loadingFailed'&&result.params.errorText==='net::ERR_BLOCKED_BY_CLIENT')blockedRequests.push(result.params)
     const request = pending.get(result.id)
     if (request) { pending.delete(result.id); result.error ? request.reject(new Error(JSON.stringify(result.error))) : request.resolve(result.result) }
   }
@@ -264,9 +268,46 @@ try {
       assert.ok(desktop,'Debe poder volver a la vista de escritorio')
       await panelCall('mobile',520,true)
       await delay(200)
-      await panelEvaluate('window.focus(); document.body.tabIndex=0; document.body.focus(); true')
+        await panelEvaluate('window.focus(); document.body.tabIndex=0; document.body.focus(); true')
+        if(process.env.VEYRION_LIFECYCLE_VERIFY==='1'){
+          await panelEvaluate('globalThis.panelTicks=0;setInterval(()=>panelTicks++,20);true')
+          await delay(300)
+          assert.ok(await panelEvaluate('panelTicks>0'),'El panel visible debe ejecutar sus temporizadores')
+          await panelCall('close',360,true)
+          await delay(200)
+          const pausedTicks=await panelEvaluate('panelTicks')
+          await delay(800)
+          assert.equal(await panelEvaluate('panelTicks'),pausedTicks,'El panel oculto debe suspender temporizadores')
+          await panelCall('open',360,true)
+          await delay(300)
+          assert.ok(await panelEvaluate('panelTicks>'+pausedTicks),'Reabrir debe reanudar el mismo documento')
+          await panelEvaluate("document.querySelector('#test-input').focus();true")
+          await panelCdp('Input.insertText',{text:' Borrador protegido 083'})
+          await delay(300)
+          await panelCall('close',360,true)
+          for(let index=0;index<8;index++){
+            const address=`http://127.0.0.1:${testServer.address().port}/cache-pressure-${index}`
+            await evaluate(`new Promise((resolve,reject)=>chrome.braveTheme.setVeyrionPanel('open',${JSON.stringify(address)},360,true,()=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve(true)))`)
+            await delay(200)
+          }
+          const retained=(await(await fetch(`http://127.0.0.1:${port}/json/list`)).json())
+          // The cap is deliberately soft: unknown edit/media state is protected.
+          console.log('Paneles conservados bajo presión:',retained.filter(t=>t.url.includes('/cache-pressure-')).length)
+          await panelCall('open',360,true)
+          assert.ok((await panelEvaluate("document.querySelector('#test-input').value")).includes('Borrador protegido 083'),'La presión de caché debe conservar los borradores editados')
+          // Deliberate renderer failure in this disposable test profile only.
+          panelCdp('Page.crash').catch(()=>{})
+          await delay(1500)
+          assert.equal(child.exitCode,null,'El fallo del renderer no debe cerrar el navegador')
+          await panelCall('close',360,true)
+          await panelCall('open',360,true)
+          let recovered=false
+          for(let i=0;i<150;i++){try{recovered=await panelEvaluate('document.body?.dataset.executed==="yes"')}catch{}if(recovered)break;await delay(100)}
+          assert.ok(recovered,'Reabrir un panel fallido debe recuperar la navegación')
+          console.log('Ciclo de vida: suspensión, reanudación y recuperación del renderer verificadas')
+        }
     } finally {panelSocket.close();await panelCall('close',520,true)}
-    for(let cycle=0;cycle<10;cycle++){
+    for(let cycle=0;cycle<(process.env.VEYRION_LIFECYCLE_VERIFY==='1'?120:10);cycle++){
       await panelCall('open',520,true)
       await delay(80)
       await panelCall('close',520,true)
@@ -445,6 +486,55 @@ try {
       await delay(100)
     }
     assert.ok(systemReady,'La configuración del sistema debe cargar')
+    if(process.env.VEYRION_BLOCKING_VERIFY==='1'){
+      const expectedLists=[
+        'https://easylist.to/easylist/easylist.txt',
+        'https://easylist.to/easylist/easyprivacy.txt',
+        'https://easylist-downloads.adblockplus.org/easylistspanish.txt',
+        'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/quick-fixes.txt'
+      ]
+      let subscriptions=[]
+      for(let attempt=0;attempt<120;attempt++){
+        subscriptions=await evaluate("import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('brave_adblock.getListSubscriptions'))")
+        if(expectedLists.every(url=>subscriptions.some(row=>row.subscription_url===url&&row.enabled&&row.last_successful_update_attempt>0)))break
+        await delay(1000)
+      }
+      for(const url of expectedLists){
+        const row=subscriptions.find(item=>item.subscription_url===url)
+        assert.ok(row?.enabled&&row.last_successful_update_attempt>0,'La lista debe estar activada y descargada: '+url)
+      }
+      await cdp('Network.enable')
+      await cdp('Page.navigate',{url:`http://veyrion-control.invalid:${testServer.address().port}/blocking-check`})
+      for(let i=0;i<100;i++){try{if(await evaluate('document.body?.dataset.executed === "yes"'))break}catch{}await delay(100)}
+      assert.equal(await evaluate("fetch('/allowed-resource').then(r=>r.ok)"),true)
+      const blockedBefore=blockedRequests.length
+      assert.equal(await evaluate(`fetch('http://veyrion-ad-test.ad.doubleclick.net:${testServer.address().port}/ad.js',{mode:'no-cors'}).then(()=>false,()=>true)`),true,'Una lista oficial debe bloquear el dominio publicitario de prueba')
+      await delay(100)
+      assert.ok(blockedRequests.length>blockedBefore,'El rechazo debe venir del bloqueador, no de DNS o CSP')
+      await fs.writeFile(path.join(root,'artifacts/blocking-verification-083.json'),JSON.stringify({passed:true,subscriptions,officialRuleBlocked:true,ordinaryRequestAllowed:true},null,2))
+      await cdp('Page.navigate',{url:'chrome://settings/system'})
+      await delay(1000)
+    }
+    if(process.env.VEYRION_IMPORT_VERIFY==='1'){
+      const sources=await evaluate("import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('initializeImportDialog')).then(rows=>rows.map(row=>row.name))")
+      for(const brand of ['Brave','Opera','Opera GX','Firefox'])assert.ok(sources.includes(brand+' (seleccionar carpeta)'),'Debe ofrecer importación desde '+brand)
+      await cdp('Page.navigate',{url:'chrome://settings/importData'})
+      let importReady=false
+      for(let i=0;i<150;i++){try{importReady=await evaluate(`(()=>{const find=root=>!!root.querySelector('#veyrion-import-passwords')||[...root.querySelectorAll('*')].some(e=>e.shadowRoot&&find(e.shadowRoot));return find(document)})()`)}catch{}if(importReady)break;await delay(100)}
+      assert.ok(importReady,'El diálogo debe ofrecer acceso a importar contraseñas CSV')
+      if(process.env.VEYRION_IMPORT_UI_HOLD==='1'){
+        await fs.writeFile(path.join(root,'artifacts/import-ready-083.json'),JSON.stringify({profile,port,pid:child.pid,marker:path.join(profile,'continue-import')}))
+        console.log('IMPORT READY: '+path.join(profile,'continue-import'))
+        let completed=false
+        for(let i=0;i<2400;i++){assert.equal(child.exitCode,null);try{await fs.access(path.join(profile,'continue-import'));completed=true;break}catch{}await delay(250)}
+        assert.ok(completed,'La prueba de importación debe completarse')
+      }
+      await cdp('Page.navigate',{url:'chrome://settings/braveSync/setup'})
+      let syncPending=false
+      for(let i=0;i<150;i++){try{syncPending=await evaluate(`(()=>{const find=root=>!!root.querySelector('#veyrion-sync-pending')||[...root.querySelectorAll('*')].some(e=>e.shadowRoot&&find(e.shadowRoot));return find(document)})()`)}catch{}if(syncPending)break;await delay(100)}
+      assert.ok(syncPending,'Sync debe indicar que no está habilitado')
+      await cdp('Page.navigate',{url:'chrome://settings/system'})
+    }
     assert.ok(await evaluate(`(()=>{const scan=root=>!root.querySelector('settings-brave-origin-onboarding')&&[...root.querySelectorAll('*')].every(e=>!e.shadowRoot||scan(e.shadowRoot));return scan(document)})()`),'La promoción de Brave Origin debe estar retirada del sistema')
     if(process.env.VEYRION_DRAG_VERIFY==='1'){
       assert.equal(process.env.VEYRION_WINDOWED_VERIFY,'1','El arrastre se prueba en una ventana real');
@@ -463,12 +553,29 @@ try {
       await evaluate("import('chrome://resources/js/cr.js').then(({sendWithPromise})=>sendWithPromise('veyrionAppearance',{mode:'dark',size:20,spacing:3,colored:true,color:0xd2d2d2}))");
     }
     const stabilitySeconds=Number(process.env.VEYRION_STABILITY_SECONDS)||0
-    if(stabilitySeconds>0){const deadline=Date.now()+stabilitySeconds*1000;console.log(`Estabilidad: ${stabilitySeconds}s de reposo con sandbox activo`);while(Date.now()<deadline){assert.equal(child.exitCode,null,'El navegador debe permanecer abierto en reposo');await evaluate('document.readyState');await delay(2000)}}
+    if(stabilitySeconds>0){
+      const deadline=Date.now()+stabilitySeconds*1000,samples=[]
+      let nextSample=0
+      console.log(`Estabilidad: ${stabilitySeconds}s de reposo con sandbox activo`)
+      while(Date.now()<deadline){
+        assert.equal(child.exitCode,null,'El navegador debe permanecer abierto en reposo')
+        await evaluate('document.readyState')
+        if(process.env.VEYRION_LIFECYCLE_VERIFY==='1'&&Date.now()>=nextSample){
+          const script=`$all=@(Get-CimInstance Win32_Process -Filter "Name='veyrion.exe'");$ids=@(${child.pid});do{$more=@($all|Where-Object{$_.ParentProcessId -in $ids -and $_.ProcessId -notin $ids}|ForEach-Object{$_.ProcessId});$ids+=$more}while($more.Count);$p=@(Get-Process -Id $ids -ErrorAction SilentlyContinue);@{processes=$p.Count;workingSetBytes=($p|Measure-Object WorkingSet64 -Sum).Sum;cpuSeconds=($p|Measure-Object CPU -Sum).Sum}|ConvertTo-Json -Compress`
+          const sample=JSON.parse(execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{encoding:'utf8',windowsHide:true}).trim())
+          samples.push({elapsedSeconds:stabilitySeconds-Math.round((deadline-Date.now())/1000),...sample})
+          nextSample=Date.now()+30000
+        }
+        await delay(2000)
+      }
+      if(samples.length)await fs.writeFile(path.join(root,'artifacts/panel-lifecycle-memory.json'),JSON.stringify({seconds:stabilitySeconds,samples},null,2))
+    }
     try { await cdp('Browser.close') } catch {}
     for (let i = 0; i < 100 && child.exitCode === null; i++) await delay(100)
     assert.notEqual(child.exitCode, null, 'El perfil de prueba debe cerrarse para comprobar las preferencias persistidas')
     assert.equal(child.exitCode,0,'El navegador debe cerrarse limpiamente, sin una salida de fallo')
     const saved = JSON.parse(await fs.readFile(path.join(profile, 'Default/Preferences'), 'utf8'))
+    if(process.env.VEYRION_IMPORT_UI_HOLD==='1')assert.ok((await fs.readFile(path.join(profile,'Default/Bookmarks'),'utf8')).includes('Veyrion Synthetic Import 083'),'La importación debe guardar el favorito de prueba real')
     assert.equal(saved.webkit?.webprefs?.force_dark_mode_enabled,false,'El modo oscuro web debe conservar su preferencia al cerrar')
     assert.equal(saved.side_panel?.is_right_aligned, false, 'La barra nativa debe estar alineada a la izquierda')
     assert.equal(saved.brave?.sidebar?.sidebar_show_option, 0, 'La barra nativa debe permanecer visible al navegar')

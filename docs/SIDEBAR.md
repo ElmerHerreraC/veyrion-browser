@@ -1,5 +1,7 @@
 # Barra lateral y tableros
 
+En 0.8.3, **Ahorrar recursos de paneles ocultos**, dentro de la tuerca lateral, pausa los temporizadores de los paneles al ocultarlos y los reanuda al abrirlos. Sus avisos pueden retrasarse; desactiva la opción y reabre el panel para mantener actividad continua. Audio, captura y conexiones WebRTC activos no se suspenden. Los documentos se conservan sin cierre automático para proteger borradores y sesiones. No se garantiza un límite fijo de RAM.
+
 Desde 0.8.2, el engranaje abre la configuración de la barra lateral y los tableros en un panel compacto. Se retiran los accesos duplicados de tres puntos y cuadrícula. El modo oscuro forzado se activa dentro de ese panel. Los accesos a Descargas y Extensiones se pueden mostrar, ocultar y reordenar junto con los demás iconos.
 
 Favoritos y los paneles web comparten el espacio lateral: al abrir uno se oculta el anterior. Desde 0.6.0, los documentos laterales permanecen abiertos en segundo plano al cambiar de pestaña o de servicio. Al volver se reutiliza el mismo documento, conservando texto, sesión y navegación. La caché pertenece a la ventana y acaba al cerrarla; no promete conservar formularios sin guardar después de reiniciar. Las páginas internas de configuración, descargas y extensiones tienen estilos adaptados a anchos pequeños. Los sitios HTTP/HTTPS nuevos usan vista móvil por defecto; el botón Celular/Escritorio conserva la elección por sitio. La adaptación de sitios externos también depende de su diseño; un sitio sin diseño adaptable puede verse reducido o requerir desplazamiento.
@@ -33,3 +35,5 @@ Google se selecciona una vez como buscador de inicio, ventanas normales y privad
 La caché experimental DAT de filtros queda desactivada: en un perfil nuevo su espera del catálogo impedía cargar incluso los filtros personalizados. El bloqueo sigue usando el motor nativo; las pruebas no desactivan Shields. Las listas descargadas se vuelven a procesar al iniciar.
 
 En 0.7.1, el destino del arrastre se calcula por los puntos medios verticales, incluyendo los espacios entre iconos y después del último. El cálculo anterior terminaba en una comprobación fatal al salir de los rectángulos de los botones; el volcado de Windows confirmó esa ruta.
+
+En la versión 0.8.3 se pospone el cierre automático de paneles almacenados por estabilidad. La suspensión de documentos ocultos reduce actividad; no garantiza liberar su memoria ni limita el número de documentos conservados.

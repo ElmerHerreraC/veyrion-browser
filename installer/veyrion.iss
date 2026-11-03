@@ -8,7 +8,7 @@
 [Setup]
 AppId={{6C63BB20-2F16-4AF6-8CED-CBA7E7536C1A}
 AppName=Veyrion
-AppVersion=0.8.2
+AppVersion=0.8.3
 AppPublisher=Veyrion Project
 DefaultDirName={localappdata}\Programs\Veyrion
 DefaultGroupName=Veyrion
@@ -32,6 +32,8 @@ Name: "desktopicon"; Description: "Crear acceso de Veyrion en el escritorio"
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Veyrion.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\updater\*"; DestDir: "{app}\updater"; Flags: ignoreversion
+Source: "..\tools\diagnose-veyrion.ps1"; DestDir: "{app}\diagnostics"; Flags: ignoreversion
+Source: "..\tools\DIAGNOSTICO VEYRION.cmd"; DestDir: "{app}\diagnostics"; Flags: ignoreversion
 Source: "..\tools\configure-sandbox-access.ps1"; DestDir: "{app}\updater"; Flags: ignoreversion
 [Icons]
 Name: "{group}\Veyrion"; Filename: "{app}\veyrion.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Veyrion.ico"

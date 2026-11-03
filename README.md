@@ -4,6 +4,14 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
+Cuando falla la traducción heredada, el aviso ofrece **Traducir con Google**, que abre la página pública en el servicio web de Google y comparte su dirección al pulsar. No sustituye la traducción nativa ni sirve para páginas privadas o con sesión iniciada. El servicio nativo sigue pendiente de acceso autorizado.
+
+El bloqueo agresivo se refuerza con suscripciones directas actualizables a EasyList, EasyPrivacy, EasyList Spanish y uBlock Quick Fixes. Conserva las excepciones por sitio y las listas desactivadas por el usuario. Véase [Bloqueo de anuncios](docs/BLOCKING.md).
+
+En 0.8.3 los paneles ocultos pueden suspender su actividad y se recuperan al reabrir; los documentos se conservan para proteger borradores y sesiones; se pospone su cierre automático por estabilidad. El control de ahorro de recursos permite mantener actividad continua. Se corrige la referencia al contenido cuando el motor reemplaza un panel y se permite recargar un renderer fallido al reabrir. Las pruebas locales no identifican todavía la causa de los bloqueos de WhatsApp reportados en otro equipo, también como pestaña normal; se incluye un diagnóstico local para ese equipo.
+
+La importación detecta Brave y Opera GX y ofrece selección manual de perfiles de Brave, Opera/GX y Firefox, además del acceso a contraseñas CSV con verificación de identidad en Windows. Sync indica claramente que sigue pendiente. Véase [Importar datos](docs/IMPORT.md).
+
 En 0.8.2 los accesos de personalización comparten el diseño de pestañas. La tuerca es el único acceso a la configuración lateral y de tableros; el modo oscuro forzado está dentro de ese panel. Una notificación nativa anuncia las actualizaciones y permite descargar, verificar, instalar y reiniciar conservando el perfil y la sesión normal. Los avisos de cierre de las páginas se respetan; las pestañas privadas no se restauran.
 
 En 0.8.1 el inicio retira accesos rápidos, notas y promociones; coloca reloj y fecha en cabecera, usa el logo local de Google y muestra los favicons locales de los recientes, con símbolo neutro cuando no hay icono. Personalizar reúne fondo, sonido y diseño con enlaces directos a ventana, barra lateral, punteros, actualizaciones y perfil. Se eliminan los controles laterales y de actualización duplicados del panel del inicio.

@@ -15,6 +15,11 @@ import { integrateExperience } from './integrate-experience.mjs'
 import { integrateProfileSidebar } from './integrate-profile-sidebar.mjs'
 import { integrateCursorsProtection } from './integrate-cursors-protection.mjs'
 import { integrateUpdateNotifications } from './integrate-update-notifications.mjs'
+import { integratePanelLifecycle } from './integrate-panel-lifecycle.mjs'
+import { integrateImporters } from './integrate-importers.mjs'
+import { integrateProfileTools } from './integrate-profile-tools.mjs'
+import { integrateBlocking } from './integrate-blocking.mjs'
+import { integrateTranslateFallback } from './integrate-translate-fallback.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
 const component = path.join(source, 'components/brave_extension/extension')
 const destination = path.join(component, 'brave_extension/veyrion_start')
@@ -70,4 +75,9 @@ integrateExperience(source)
 integrateProfileSidebar(source)
 integrateCursorsProtection(source)
 integrateUpdateNotifications(source)
+integratePanelLifecycle(source)
+integrateImporters(source)
+integrateProfileTools(source)
+integrateBlocking(source)
+integrateTranslateFallback(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')
