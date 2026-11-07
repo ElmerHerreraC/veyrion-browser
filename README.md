@@ -4,6 +4,10 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
+La versión 0.8.4 recompila el motor con `is_debug=false`, `dcheck_always_on=false` y `enable_expensive_dchecks=false`. La configuración anterior activaba comprobaciones de desarrollo incluso en la compilación sin depuración; un minivolcado local identificó el cierre `STATUS_BREAKPOINT` en `ScriptPromiseResolverBase::Dispose` durante la recolección de memoria de Blink. Las opciones de distribución quedan explícitas en `config/build-flags.json`.
+
+`tools/finish-production-release.ps1` comprueba los indicadores del motor compilado, integra la versión, prepara la distribución, ejecuta una comprobación breve de Kick con recolección de memoria y descarga oficial de extensión, y genera el instalador firmado. La instalación opcional exige que Veyrion esté cerrado. Los minivolcados, perfiles y registros locales no se publican.
+
 Cuando falla la traducción heredada, el aviso ofrece **Traducir con Google**, que abre la página pública en el servicio web de Google y comparte su dirección al pulsar. No sustituye la traducción nativa ni sirve para páginas privadas o con sesión iniciada. El servicio nativo sigue pendiente de acceso autorizado.
 
 El bloqueo agresivo se refuerza con suscripciones directas actualizables a EasyList, EasyPrivacy, EasyList Spanish y uBlock Quick Fixes. Conserva las excepciones por sitio y las listas desactivadas por el usuario. Véase [Bloqueo de anuncios](docs/BLOCKING.md).
