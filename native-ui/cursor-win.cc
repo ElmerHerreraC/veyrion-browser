@@ -1,5 +1,10 @@
 // Profile-scoped native cursors. Never changes the Windows cursor scheme.
 void BrowserDesktopWindowTreeHostWin::SetCursorNative(gfx::NativeCursor cursor) {
+  // Mouse events can arrive before BrowserView is attached or after it detaches.
+  if (!browser_view_ || !browser_view_->browser()) {
+    views::DesktopWindowTreeHostWin::SetCursorNative(cursor);
+    return;
+  }
   auto* prefs = browser_view_->GetProfile()->GetPrefs();
   if (prefs->FindPreference("veyrion.cursor_mode") &&
       cursor.type() == ui::mojom::CursorType::kPointer) {

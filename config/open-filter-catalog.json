@@ -1,0 +1,6 @@
+[
+  {"title":"EasyList","url":"https://easylist.to/easylist/easylist.txt"},
+  {"title":"EasyPrivacy","url":"https://easylist.to/easylist/easyprivacy.txt"},
+  {"title":"EasyList Spanish","url":"https://easylist-downloads.adblockplus.org/easylistspanish.txt"},
+  {"title":"uBlock Origin Quick Fixes","url":"https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/quick-fixes.txt"}
+]

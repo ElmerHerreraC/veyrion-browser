@@ -4,6 +4,8 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
+La versión 0.9.0 integra una biblioteca abierta de recursos del bloqueador y un catálogo propio de suscripciones. Los recursos se distribuyen por el canal firmado de Veyrion; las actualizaciones ofrecen reiniciar o posponer. Añade un control para ocultar la franja inferior de los paneles y corrige un acceso nulo durante los cambios del puntero al crearse o cerrarse una ventana. Véase [Recursos abiertos](docs/OPEN-COMPONENTS.md).
+
 La versión 0.8.8 vuelve a asociar los paneles laterales con sus pestañas fijadas restauradas al reiniciar. Pulsar el icono reutiliza ese documento en vez de crear otra pestaña. La búsqueda se limita a la ventana actual y respeta las pestañas normales. Los duplicados que ya existían se conservan para evitar cerrar trabajo del usuario.
 
 La versión 0.8.7 conserva los detalles internos de los favicons al elegir iconos monocromáticos, utiliza un indicador de acento para el panel activo y muestra el botón nativo de perfil incluso cuando solo existe uno. El selector administra perfiles locales; no habilita sincronización con Google ni Brave Sync.

@@ -18,7 +18,9 @@ globalThis.VeyrionUpdates = (() => {
     const expected = `https://github.com/${config.repository}/releases/download/v${value.version}/Veyrion-Setup-x64.exe`
     if (value.url !== expected || value.repository !== config.repository) throw new Error('La actualización no pertenece al repositorio de Veyrion.')
     if (!/^[a-f0-9]{64}$/.test(value.sha256) || !Number.isSafeInteger(value.size) || value.size < 1 || value.size > 1024 ** 3) throw new Error('Huella o tamaño inválido.')
-    return { version: value.version, url: value.url, sha256: value.sha256, size: value.size, repository: value.repository }
+    const kind = value.kind ?? 'browser'
+    if (!['browser','components'].includes(kind)) throw new Error('Tipo de actualización inválido.')
+    return { version: value.version, url: value.url, sha256: value.sha256, size: value.size, repository: value.repository, kind }
   }
   async function verifyManifest(envelope, config) {
     if (!envelope || typeof envelope.payload !== 'string' || typeof envelope.signature !== 'string' || envelope.payload.length > 16000 || envelope.signature.length > 2000) throw new Error('Respuesta de actualización inválida.')

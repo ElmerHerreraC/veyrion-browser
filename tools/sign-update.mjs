@@ -7,6 +7,8 @@ const installer = fs.readFileSync(path.join(root, 'dist/Veyrion-Setup-x64.exe'))
 const receipt = JSON.parse(fs.readFileSync(path.join(root, 'dist/release-build.json'), 'utf8'))
 if (receipt.version !== config.version || receipt.sha256 !== createHash('sha256').update(installer).digest('hex')) throw new Error('Compila el instalador de la versión actual antes de firmar la actualización.')
 const manifest = { version: config.version, repository: config.repository, url: `https://github.com/${config.repository}/releases/download/v${config.version}/Veyrion-Setup-x64.exe`, size: installer.length, sha256: createHash('sha256').update(installer).digest('hex') }
+manifest.kind = process.env.VEYRION_UPDATE_KIND || 'browser'
+if (!['browser','components'].includes(manifest.kind)) throw new Error('Tipo de actualización inválido.')
 const payload = Buffer.from(JSON.stringify(manifest))
 const signature = sign('sha256', payload, fs.readFileSync(path.join(root, 'artifacts/update-signing/private.pem')))
 fs.writeFileSync(path.join(root, 'dist/veyrion-update.json'), JSON.stringify({ payload: payload.toString('base64'), signature: signature.toString('base64') }, null, 2) + '\n')

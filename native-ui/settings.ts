@@ -2,7 +2,7 @@ import {sendWithPromise as veyrionSend} from 'chrome://resources/js/cr.js'
 
 interface VeyrionAppearance {
   cursorMode:string; cursorPng:string; cursorX:number; cursorY:number; aggressiveAds:boolean;
-  mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean; autoPip: boolean; suspendPanels: boolean;
+  mode: string; color: number; size: number; spacing: number; colored: boolean; forceDark: boolean; autoPip: boolean; suspendPanels: boolean; panelToolbar: boolean;
   items: Array<{index: number; title: string; visible: boolean; icon: string}>;
   workspaces: Array<{id:number; name:string; tabs:number; current:boolean}>;
 }
@@ -78,6 +78,9 @@ class VeyrionNativeAppearance extends HTMLElement {
     const protection=document.createElement('label');protection.className='row general';protection.textContent='Bloqueo agresivo de anuncios y rastreadores'
     const aggressive=document.createElement('input');aggressive.type='checkbox';aggressive.id='aggressive-ads';aggressive.addEventListener('change',()=>this.request_({aggressiveAds:aggressive.checked}));protection.append(aggressive);this.root_.getElementById('force-dark')!.closest('.card')!.append(protection)
     const video=document.createElement('label');video.className='row general';video.textContent='Minirreproductor automático al cambiar de pestaña'
+    const panelBar=document.createElement('label');panelBar.className='row';panelBar.textContent='Mostrar dirección y control Celular/Escritorio en el panel lateral'
+    const panelToggle=document.createElement('input');panelToggle.type='checkbox';panelToggle.id='panel-toolbar';panelToggle.addEventListener('change',()=>this.request_({panelToolbar:panelToggle.checked}));panelBar.append(panelToggle)
+    this.root_.getElementById('force-dark')!.closest('.card')!.append(panelBar)
     const autoPip=document.createElement('input');autoPip.type='checkbox';autoPip.id='auto-pip';autoPip.addEventListener('change',()=>this.request_({autoPip:autoPip.checked}));video.append(autoPip)
     this.root_.getElementById('force-dark')!.closest('.card')!.append(video)
     const economy=document.createElement('label');economy.className='row';economy.textContent='Ahorrar recursos de paneles ocultos'
@@ -137,6 +140,7 @@ class VeyrionNativeAppearance extends HTMLElement {
     ;(this.root_.getElementById('force-dark') as HTMLInputElement).checked=state.forceDark
     ;(this.root_.getElementById('auto-pip') as HTMLInputElement).checked=state.autoPip
     ;(this.root_.getElementById('suspend-panels') as HTMLInputElement).checked=state.suspendPanels
+    ;(this.root_.getElementById('panel-toolbar') as HTMLInputElement).checked=state.panelToolbar
     const list=this.root_.getElementById('icons')!;list.replaceChildren()
     for(const item of state.items){
       const row=document.createElement('div');row.className='row'

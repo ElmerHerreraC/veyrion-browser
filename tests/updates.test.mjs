@@ -12,7 +12,9 @@ function envelope(value, privateKey = keys.privateKey) {
   return { payload: bytes.toString('base64'), signature: sign('sha256', bytes, privateKey).toString('base64') }
 }
 test('Solo una firma válida del editor autoriza un manifiesto', async () => {
-  assert.deepEqual(await updates.verifyManifest(envelope(manifest), config), manifest)
+  assert.deepEqual(await updates.verifyManifest(envelope(manifest), config), {...manifest,kind:'browser'})
+  assert.equal((await updates.verifyManifest(envelope({...manifest,kind:'components'}),config)).kind,'components')
+  await assert.rejects(updates.verifyManifest(envelope({...manifest,kind:'unknown'}),config),/Tipo/)
   const altered = envelope(manifest)
   altered.payload = Buffer.from(JSON.stringify({ ...manifest, sha256: '0'.repeat(64) })).toString('base64')
   await assert.rejects(updates.verifyManifest(altered, config), /firma/)

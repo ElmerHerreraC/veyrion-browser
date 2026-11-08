@@ -10,3 +10,4 @@ dist/
 *.key
 updater/VeyrionUpdate.exe
 publish-source/
+native-ui/open-components/resources.json

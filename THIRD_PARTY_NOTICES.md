@@ -1,5 +1,7 @@
 # Avisos de terceros
 
+La biblioteca `native-ui/open-components/resources.json` combina recursos de Brave adblock-resources (MPL-2.0) y uBlock Origin (Copyright Raymond Hill y colaboradores, GPL-3.0-or-later). Las licencias y revisiones exactas acompañan el archivo en `native-ui/open-components`; las fuentes correspondientes y el proceso de ensamblado están en [docs/OPEN-COMPONENTS.md](docs/OPEN-COMPONENTS.md). Los archivos de datos conservan su licencia propia.
+
 Veyrion utiliza Brave Core y Chromium. Los repositorios originales y los commits fijados están registrados en config/upstream.json.
 
 Brave Core: https://github.com/brave/brave-core (Mozilla Public License 2.0).

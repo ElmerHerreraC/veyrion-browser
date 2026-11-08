@@ -14,6 +14,8 @@ function Read-UpdateManifest($Envelope, $Config) {
   if ($value.repository -cne $Config.repository -or $value.url -cne $expected) { throw 'Unexpected update source.' }
   if ($value.sha256 -isnot [string] -or $value.sha256 -cnotmatch '^[a-f0-9]{64}$' -or $value.size -isnot [ValueType] -or $value.size -lt 1 -or $value.size -gt 1073741824 -or [Math]::Truncate($value.size) -ne $value.size) { throw 'Invalid installer digest or size.' }
   [void][Version]::Parse($value.version)
+  if (!$value.PSObject.Properties['kind']) { $value | Add-Member -NotePropertyName kind -NotePropertyValue 'browser' }
+  if ($value.kind -cne 'browser' -and $value.kind -cne 'components') { throw 'Invalid update kind.' }
   return $value
 }
 function Test-UpdateInstaller([string]$Path, $Manifest) {

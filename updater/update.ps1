@@ -2,6 +2,7 @@ param([switch]$Apply, [switch]$Restart)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'policy.ps1')
 $script:downloadVersion = $null
+$script:updateKind = 'browser'
 $installDir = Split-Path -Parent $PSScriptRoot
 $installedExe = Join-Path $installDir 'veyrion.exe'
 $cache = Join-Path $env:LOCALAPPDATA 'Veyrion\Updates'
@@ -11,7 +12,7 @@ $mutex = New-Object Threading.Mutex($false, ('Local\VeyrionUpdate-' + $identity)
 $locked = $false
 function Write-UpdateStatus([string]$State, [string]$Detail, [long]$Downloaded = 0, [long]$Total = 0) {
   $statusPath = Join-Path $cache 'status.json'
-  $json = @{state=$State;detail=$Detail;downloaded=$Downloaded;total=$Total;restartRequested=[bool]$Restart;checkedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json
+  $json = @{state=$State;detail=$Detail;kind=$script:updateKind;downloaded=$Downloaded;total=$Total;restartRequested=[bool]$Restart;checkedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json
   [IO.File]::WriteAllText(($statusPath + '.tmp'), $json, (New-Object Text.UTF8Encoding($false)))
   Move-Item -LiteralPath ($statusPath + '.tmp') -Destination $statusPath -Force
 }
@@ -72,6 +73,7 @@ try {
   $manifestPath = Join-Path $cache 'manifest.download'
   Save-BoundedDownload $config.manifestUrl $manifestPath 20000
   $manifest = Read-UpdateManifest (Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json) $config
+  $script:updateKind = $manifest.kind
   if ([Version]$manifest.version -le [Version]$config.version) { Write-UpdateStatus 'current' $config.version; exit 0 }
   # Background checks only announce a verified version. The browser owns consent.
   if (!$Apply) { Write-UpdateStatus 'available' $manifest.version; exit 0 }

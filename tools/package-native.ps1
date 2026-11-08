@@ -1,6 +1,11 @@
 param([Parameter(Mandatory=$true)][string]$PayloadDir)
 $ErrorActionPreference = 'Stop'
+& node (Join-Path $PSScriptRoot 'verify-open-component-assets.mjs')
+if ($LASTEXITCODE -ne 0) { throw 'Prepara y verifica los recursos abiertos antes de empaquetar.' }
 $payload = (Resolve-Path -LiteralPath $PayloadDir).Path
+$componentDir = Join-Path $payload 'veyrion-components'
+New-Item -ItemType Directory -Path $componentDir -Force | Out-Null
+Get-ChildItem -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'native-ui/open-components') -File | Copy-Item -Destination $componentDir -Force
 $exe = Join-Path $payload 'veyrion.exe'
 if (!(Test-Path -LiteralPath $exe)) { throw 'Falta el ejecutable nativo veyrion.exe.' }
 $info = (Get-Item -LiteralPath $exe).VersionInfo

@@ -1,5 +1,13 @@
 # Servicios heredados: revisión de Veyrion 0.8.5 / corrección 0.8.6
 
+Actualización 0.9.0: la biblioteca abierta y el catálogo de suscripciones propios
+sustituyen la entrega CRX de recursos y catálogo de Brave. La prueba nativa
+comprobó scriptlets y bloqueo en pestaña y panel, con recursos normales permitidos.
+Se retira el registro de anuncios, fondos heredados y P3A que no se utilizan.
+Esto no resuelve los servicios de traducción, Sync, Local Data, User Agent
+Exceptions o Query Filter. Los resultados históricos siguientes se conservan
+como registro; el alcance actual del bloqueador está en [OPEN-COMPONENTS.md](OPEN-COMPONENTS.md).
+
 Esta revisión distingue una función visible de una conexión comprobada. No se
 considera operativa una función solo porque su pantalla se abra.
 

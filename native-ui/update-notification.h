@@ -17,34 +17,40 @@
 
 class VeyrionUpdateNotification : public ConfirmInfoBarDelegate {
  public:
-  explicit VeyrionUpdateNotification(std::string version) : version_(std::move(version)) {}
+  explicit VeyrionUpdateNotification(std::string version, bool components = false)
+      : version_(std::move(version)), components_(components) {}
   // Fork-local identifier, registered in browser/enums.xml after Brave's 512.
   InfoBarIdentifier GetIdentifier() const override;
   std::u16string GetMessageText() const override;
   int GetButtons() const override;
   std::u16string GetButtonLabel(InfoBarButton) const override;
   bool Accept() override;
+  bool Cancel() override;
   bool ShouldExpire(const NavigationDetails& details) const override;
  private:
   std::string version_;
+  bool components_;
 };
 
 inline infobars::InfoBarDelegate::InfoBarIdentifier VeyrionUpdateNotification::GetIdentifier() const {
   return static_cast<InfoBarIdentifier>(513);
 }
 inline std::u16string VeyrionUpdateNotification::GetMessageText() const {
-  return u"Nueva versión de Veyrion " + base::UTF8ToUTF16(version_) +
-      u" disponible. Se descargará y verificará antes de reiniciar.";
+  return (components_ ? u"Actualización de componentes de Veyrion " :
+                        u"Actualización del navegador Veyrion ") +
+      base::UTF8ToUTF16(version_) +
+      u" disponible. Se descargará y verificará antes de reiniciar. Puedes posponerlo.";
 }
-inline int VeyrionUpdateNotification::GetButtons() const { return BUTTON_OK; }
-inline std::u16string VeyrionUpdateNotification::GetButtonLabel(InfoBarButton) const {
-  return u"Actualizar y reiniciar";
+inline int VeyrionUpdateNotification::GetButtons() const { return BUTTON_OK | BUTTON_CANCEL; }
+inline std::u16string VeyrionUpdateNotification::GetButtonLabel(InfoBarButton button) const {
+  return button == BUTTON_OK ? u"Actualizar y reiniciar" : u"Reiniciar después";
 }
 inline bool VeyrionUpdateNotification::Accept() {
   base::ThreadPool::PostTask(FROM_HERE, {base::MayBlock()},
       base::BindOnce([] { VeyrionUpdateState("apply-restart"); }));
   return true;
 }
+inline bool VeyrionUpdateNotification::Cancel() { return true; }
 inline bool VeyrionUpdateNotification::ShouldExpire(const NavigationDetails&) const {
   return false;
 }
@@ -75,7 +81,9 @@ inline void VeyrionHandleUpdateNotification(BrowserWindowInterface* browser,
   if (!contents || contents->IsLoading() || contents->GetLastCommittedURL().is_empty()) return;
   auto* manager = contents ? infobars::ContentInfoBarManager::FromWebContents(contents) : nullptr;
   if (!manager) return;
-  if (manager->AddInfoBar(CreateConfirmInfoBar(std::make_unique<VeyrionUpdateNotification>(*version))))
+  const auto* kind = state.FindString("kind");
+  if (manager->AddInfoBar(CreateConfirmInfoBar(std::make_unique<VeyrionUpdateNotification>(
+          *version, kind && *kind == "components"))))
     notified = *version;
 }
 #endif
