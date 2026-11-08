@@ -20,6 +20,7 @@ import { integrateImporters } from './integrate-importers.mjs'
 import { integrateProfileTools } from './integrate-profile-tools.mjs'
 import { integrateBlocking } from './integrate-blocking.mjs'
 import { integrateTranslateFallback } from './integrate-translate-fallback.mjs'
+import { integrateWebstoreTransport } from './integrate-webstore-transport.mjs'
 const source = path.resolve(process.argv[2] || path.join(root, 'src/brave'))
 const component = path.join(source, 'components/brave_extension/extension')
 const destination = path.join(component, 'brave_extension/veyrion_start')
@@ -80,4 +81,5 @@ integrateImporters(source)
 integrateProfileTools(source)
 integrateBlocking(source)
 integrateTranslateFallback(source)
+integrateWebstoreTransport(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')
