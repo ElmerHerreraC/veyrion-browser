@@ -1,0 +1,20 @@
+{
+  "library": {
+    "name": "@browsermt/bergamot-translator",
+    "version": "0.4.9",
+    "url": "https://registry.npmjs.org/@browsermt/bergamot-translator/-/bergamot-translator-0.4.9.tgz",
+    "integrity": "sha512-bNuuCwM/JnsIYQCKXcYKFT4Qc5vLMoB8Nbvz8ReIgs7xzebK8Sa+R8iEK8mLvNBe/WaZ6zrPaUQilLsRT/ea8Q=="
+  },
+  "hashes": {
+    "vendor/translator.js": "b46f0ccf834392caf097cf4eed968d72e3ec8a855faaabe1b57bcc5f661994a5",
+    "vendor/worker/translator-worker.js": "90257af9ee0758983501bdce77ca7ec168cd7360d4689298c20a81b0251d6b62",
+    "vendor/worker/bergamot-translator-worker.js": "748b2418418a2ffc6e70721aeb10098d8e6fb589ea156b91f4ae8bc3490d8f7a",
+    "vendor/worker/bergamot-translator-worker.wasm": "95a2b58dd6773bf1b3f345d71f9149928b9f75f4ec9c9064c0b3e42c298671b2",
+    "models/enes/vocab.esen.spm": "909b1eea1face0d7f90a474fe29a8c0fef8d104b6e41e65616f864c964ba8845",
+    "models/enes/lex.50.50.enes.s2t.bin": "3a113d713dec3cf1d12bba5b138ae616e28bba4bbc7fe7fd39ba145e26b86d7f",
+    "models/enes/model.enes.intgemm.alphas.bin": "fa7460037a3163e03fe1d23602f964bff2331da6ee813637e092ddf37156ef53",
+    "models/esen/vocab.esen.spm": "909b1eea1face0d7f90a474fe29a8c0fef8d104b6e41e65616f864c964ba8845",
+    "models/esen/lex.50.50.esen.s2t.bin": "f11a2c23ef85ab1fee1c412b908d69bc20d66fd59faa8f7da5a5f0347eddf969",
+    "models/esen/model.esen.intgemm.alphas.bin": "4b6b7f451094aaa447d012658af158ffc708fc8842dde2f871a58404f5457fe0"
+  }
+}

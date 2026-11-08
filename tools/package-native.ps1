@@ -5,7 +5,13 @@ if ($LASTEXITCODE -ne 0) { throw 'Prepara y verifica los recursos abiertos antes
 $payload = (Resolve-Path -LiteralPath $PayloadDir).Path
 $componentDir = Join-Path $payload 'veyrion-components'
 New-Item -ItemType Directory -Path $componentDir -Force | Out-Null
-Get-ChildItem -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'native-ui/open-components') -File | Copy-Item -Destination $componentDir -Force
+$componentSource = Join-Path (Split-Path -Parent $PSScriptRoot) 'native-ui/open-components'
+Get-ChildItem -LiteralPath $componentSource -File -Recurse | ForEach-Object {
+  $relative = $_.FullName.Substring($componentSource.Length).TrimStart('\','/')
+  $destination = Join-Path $componentDir $relative
+  New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+  Copy-Item -LiteralPath $_.FullName -Destination $destination -Force
+}
 $exe = Join-Path $payload 'veyrion.exe'
 if (!(Test-Path -LiteralPath $exe)) { throw 'Falta el ejecutable nativo veyrion.exe.' }
 $info = (Get-Item -LiteralPath $exe).VersionInfo

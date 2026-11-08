@@ -1,4 +1,4 @@
-param([switch]$Apply, [switch]$Restart)
+param([switch]$Apply, [switch]$Restart, [string]$StartupSignal, [int]$LauncherProcessId)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'policy.ps1')
 $script:downloadVersion = $null
@@ -7,12 +7,29 @@ $installDir = Split-Path -Parent $PSScriptRoot
 $installedExe = Join-Path $installDir 'veyrion.exe'
 $cache = Join-Path $env:LOCALAPPDATA 'Veyrion\Updates'
 [IO.Directory]::CreateDirectory($cache) | Out-Null
+if ($StartupSignal) {
+  if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($StartupSignal)) -ine [IO.Path]::GetFullPath($cache) -or [IO.Path]::GetFileName($StartupSignal) -cnotmatch '^started-[0-9a-f]{32}\.txt$') { throw 'Invalid startup signal.' }
+  [IO.File]::WriteAllText($StartupSignal,'1')
+  if ($Apply -and $LauncherProcessId -gt 0) {
+    $launcher = Get-Process -Id $LauncherProcessId -ErrorAction SilentlyContinue
+    if ($launcher -and !$launcher.WaitForExit(10000)) { throw 'Update launcher did not release its executable.' }
+  }
+}
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $mutex = New-Object Threading.Mutex($false, ('Local\VeyrionUpdate-' + $identity))
 $locked = $false
+function Requested-Restart([string]$Version) {
+  if ($Restart) { return $true }
+  $requestPath = Join-Path $cache 'restart-request.json'
+  try {
+    if (!(Test-Path -LiteralPath $requestPath) -or (Get-Item -LiteralPath $requestPath).Length -gt 2000) { return $false }
+    $request = Get-Content -LiteralPath $requestPath -Raw | ConvertFrom-Json
+    return $request.version -ceq $Version
+  } catch { return $false }
+}
 function Write-UpdateStatus([string]$State, [string]$Detail, [long]$Downloaded = 0, [long]$Total = 0) {
   $statusPath = Join-Path $cache 'status.json'
-  $json = @{state=$State;detail=$Detail;kind=$script:updateKind;downloaded=$Downloaded;total=$Total;restartRequested=[bool]$Restart;checkedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json
+  $json = @{state=$State;detail=$Detail;kind=$script:updateKind;downloaded=$Downloaded;total=$Total;restartRequested=[bool](Requested-Restart $Detail);checkedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json
   [IO.File]::WriteAllText(($statusPath + '.tmp'), $json, (New-Object Text.UTF8Encoding($false)))
   Move-Item -LiteralPath ($statusPath + '.tmp') -Destination $statusPath -Force
 }
@@ -64,7 +81,7 @@ function Save-BoundedDownload([string]$Url, [string]$Path, [long]$Limit) {
 try {
   # A user click must not be discarded while the scheduled check owns the lock.
   try { $locked = $mutex.WaitOne($(if ($Apply) { 35000 } else { 0 })) } catch [Threading.AbandonedMutexException] { $locked = $true }
-  if (!$locked) { exit 0 }
+  if (!$locked) { if ($Apply) { throw 'Hay otra actualización en curso. Espera a que termine o revisa su estado.' }; exit 0 }
   if ((Get-Item -LiteralPath $installedExe).VersionInfo.ProductName -ne 'Veyrion') { throw 'Unexpected installed product.' }
   $config = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'config.json') -Raw | ConvertFrom-Json
   if ($config.repository -cne 'ElmerHerreraC/veyrion-browser' -or $config.manifestUrl -cne 'https://github.com/ElmerHerreraC/veyrion-browser/releases/latest/download/veyrion-update.json') { throw 'Unexpected update channel.' }
@@ -100,12 +117,16 @@ try {
   if ([Version]$manifest.version -le [Version]$current.version) { exit 0 }
   Test-UpdateInstaller $installer $manifest
   Write-UpdateStatus 'installing' $manifest.version
-  $process = Start-Process -FilePath $installer -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCLOSEAPPLICATIONS' -PassThru -WindowStyle Hidden
+  # Inno Setup's SILENT mode shows installation progress without wizard prompts.
+  # Keep the PowerShell worker hidden; only the native installer is visible.
+  $process = Start-Process -FilePath $installer -ArgumentList '/SILENT /SUPPRESSMSGBOXES /NORESTART /NOCLOSEAPPLICATIONS' -PassThru -WindowStyle Normal
   $process.WaitForExit()
   if ($process.ExitCode -ne 0) { throw ('Installer exit: ' + $process.ExitCode) }
   $current = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'config.json') -Raw | ConvertFrom-Json
   if ($current.version -cne $manifest.version) { throw 'Installed version did not advance.' }
   Write-UpdateStatus 'installed' $manifest.version
-  if ($Restart) { Restart-Veyrion $manifest.version }
+  if (Requested-Restart $manifest.version) { Restart-Veyrion $manifest.version }
+  $intent = Join-Path $cache 'restart-request.json'
+  if (Test-Path -LiteralPath $intent) { Remove-Item -LiteralPath $intent }
 } catch { Write-UpdateStatus 'error' $_.Exception.Message; exit 1 }
 finally { if ($locked) { $mutex.ReleaseMutex() }; $mutex.Dispose() }

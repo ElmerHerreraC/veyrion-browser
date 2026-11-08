@@ -1,0 +1,7 @@
+Local translation: Bergamot Translator 0.4.9, Mozilla Public License 2.0.
+Source: https://github.com/browsermt/bergamot-translator
+English/Spanish models: Mozilla/Bergamot, Mozilla Public License 2.0.
+Source registry: https://github.com/mozilla/firefox-translations-models
+Pinned downloads and SHA-256 hashes: config/local-translation.json in Veyrion's source.
+Reproduction: node tools/prepare-local-translation.mjs
+Only selected English/Spanish models are bundled. Text is processed on this device.

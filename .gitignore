@@ -11,3 +11,8 @@ dist/
 updater/VeyrionUpdate.exe
 publish-source/
 native-ui/open-components/resources.json
+extension/translation/vendor/
+extension/translation/models/
+native-ui/open-components/local-data/
+native-ui/open-components/brave-checks.txt
+native-ui/open-components/query-filter.json

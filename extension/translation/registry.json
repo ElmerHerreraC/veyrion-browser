@@ -1,0 +1,44 @@
+[
+  {
+    "from": "en",
+    "to": "es",
+    "files": {
+      "vocab": {
+        "name": "models/enes/vocab.esen.spm",
+        "size": 825463,
+        "expectedSha256Hash": "909b1eea1face0d7f90a474fe29a8c0fef8d104b6e41e65616f864c964ba8845"
+      },
+      "lex": {
+        "name": "models/enes/lex.50.50.enes.s2t.bin",
+        "size": 3347104,
+        "expectedSha256Hash": "3a113d713dec3cf1d12bba5b138ae616e28bba4bbc7fe7fd39ba145e26b86d7f"
+      },
+      "model": {
+        "name": "models/enes/model.enes.intgemm.alphas.bin",
+        "size": 17140755,
+        "expectedSha256Hash": "fa7460037a3163e03fe1d23602f964bff2331da6ee813637e092ddf37156ef53"
+      }
+    }
+  },
+  {
+    "from": "es",
+    "to": "en",
+    "files": {
+      "vocab": {
+        "name": "models/esen/vocab.esen.spm",
+        "size": 825463,
+        "expectedSha256Hash": "909b1eea1face0d7f90a474fe29a8c0fef8d104b6e41e65616f864c964ba8845"
+      },
+      "lex": {
+        "name": "models/esen/lex.50.50.esen.s2t.bin",
+        "size": 3860888,
+        "expectedSha256Hash": "f11a2c23ef85ab1fee1c412b908d69bc20d66fd59faa8f7da5a5f0347eddf969"
+      },
+      "model": {
+        "name": "models/esen/model.esen.intgemm.alphas.bin",
+        "size": 17140755,
+        "expectedSha256Hash": "4b6b7f451094aaa447d012658af158ffc708fc8842dde2f871a58404f5457fe0"
+      }
+    }
+  }
+]

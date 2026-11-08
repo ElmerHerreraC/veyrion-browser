@@ -1,0 +1,15 @@
+{
+  "repository": "brave/adblock-lists",
+  "revision": "2d6e0c1501b9a5bb4879217d8cf27facb58aedb9",
+  "hashes": {
+    "local-data/1/webcompat-exceptions.json": "0750af0ac2b84ddc105383cc5279bfe82f4d961843becaba666e0b96af73b269",
+    "local-data/1/debounce.json": "fb2396985a78983c8f88ee701100c5cb4681731239ac6624e86da1212645dbf8",
+    "local-data/1/request-otr.json": "e3a7bfe4f7019b5716f3b7717470481970485b0fc530106eba2b547eb17f9498",
+    "local-data/1/clean-urls.json": "07ce9fa879002a839cfef065b72e95908dc0e765ff740692f66e22e08b866471",
+    "local-data/1/clean-urls-permissions.json": "caef48499d9569d0bc13c950c2b11a0707b4f08c42c46eac64ec80e6dabd331a",
+    "local-data/1/https-upgrade-exceptions-list.txt": "ec12bca633a18d9d3aed6d3e54a7da678f3d70e84e9bedd911e968fa912ad58c",
+    "query-filter.json": "cdea32cdabdabcadc737b87c75d4e6408850b6e09d506491b7fb278c11ee5f24",
+    "brave-checks.txt": "ee6361b9c995817cc4ac433c0e25e624672afeb94a4bf34e8cd2dabb69a11ceb",
+    "LICENSE-ADBLOCK-LISTS.txt": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
+  }
+}

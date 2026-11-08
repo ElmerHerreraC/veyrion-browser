@@ -14,6 +14,7 @@
 #include "base/process/process_handle.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/time/time.h"
 
 inline bool VeyrionSaveRestartArguments(const std::string& version) {
   if (!base::Version(version).IsValid()) return false;
@@ -65,12 +66,65 @@ inline base::DictValue VeyrionUpdateState(const std::string& action) {
       result.Set("state", "current");
   }
   if (action == "check" || action == "apply" || action == "apply-restart") {
+    if (action == "apply-restart") {
+      const auto* version = result.FindString("detail");
+      const auto* installed = result.FindString("installed");
+      if (!version || !installed || !base::Version(*version).IsValid() ||
+          !base::Version(*installed).IsValid() ||
+          base::Version(*version) <= base::Version(*installed)) {
+        result.Set("state", "error");
+        result.Set("detail", "No hay una versión válida pendiente de instalar.");
+        return result;
+      }
+      base::DictValue request;
+      request.Set("version", *version);
+      request.Set("pid", static_cast<int>(base::GetCurrentProcId()));
+      std::string json;
+      auto request_path = status.DirName().AppendASCII("restart-request.json");
+      if (!base::CreateDirectory(status.DirName()) ||
+          !base::JSONWriter::Write(request, &json) || !base::WriteFile(request_path, json)) {
+        result.Set("state", "error");
+        result.Set("detail", "No se pudo guardar la solicitud de reinicio.");
+        return result;
+      }
+      if (const auto* state = result.FindString("state"); state &&
+          (*state == "downloading" || *state == "verifying" || *state == "ready-on-close")) {
+        result.Set("restartRequested", true);
+        return result;
+      }
+    }
     base::CommandLine command(directory.AppendASCII("updater").AppendASCII("VeyrionUpdate.exe"));
     command.AppendArg(action);
     base::LaunchOptions options;
     options.start_hidden = true;
     auto process = base::LaunchProcess(command, options);
-    result.Set("state", process.IsValid() ? (action == "check" ? "checking" : "starting") : "error");
+    bool started = process.IsValid();
+    if (started && action != "check") {
+      int exit_code = -1;
+      started = process.WaitForExitWithTimeout(base::Seconds(12), &exit_code) && exit_code == 0;
+    }
+    result.Set("state", started ? (action == "check" ? "checking" : "starting") : "error");
+    if (!started) {
+      result.Set("detail", "El actualizador no pudo iniciar. Consulta el diagnóstico o instala la nueva versión manualmente.");
+      base::DictValue failure;
+      failure.Set("state", "error");
+      failure.Set("detail", *result.FindString("detail"));
+      failure.Set("restartRequested", false);
+      std::string json;
+      if (base::CreateDirectory(status.DirName()) && base::JSONWriter::Write(failure, &json))
+        base::WriteFile(status, json);
+    }
+  }
+  if (const auto* state = result.FindString("state"); state && *state == "ready-on-close") {
+    content.clear();
+    if (base::ReadFileToStringWithMaxSize(status.DirName().AppendASCII("restart-request.json"), &content, 2000)) {
+      auto request = base::JSONReader::ReadDict(content, base::JSON_PARSE_RFC);
+      const auto* version = result.FindString("detail");
+      if (request && version && request->FindString("version") &&
+          *request->FindString("version") == *version &&
+          request->FindInt("pid").value_or(0) == static_cast<int>(base::GetCurrentProcId()))
+        result.Set("restartRequested", true);
+    }
   }
   return result;
 }

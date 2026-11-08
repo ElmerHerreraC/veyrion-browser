@@ -58,7 +58,7 @@ export function integratePanelApi(source) {
   }
   auto* sender = GetSenderWebContents();
   if (!sender) return RespondNow(Error("A Veyrion tab is required."));
-  auto* tab = tabs::TabInterface::MaybeGetFromContents(sender);
+  auto* tab = ::tabs::TabInterface::MaybeGetFromContents(sender);
   auto* window = tab ? tab->GetBrowserWindowInterface() : nullptr;
   if (!window) return RespondNow(Error("Open this control in a Veyrion tab."));
   auto* preferences = window->GetProfile()->GetPrefs();
