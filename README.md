@@ -4,6 +4,8 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
+La versión 0.8.6 corrige dos dependencias del actualizador: consulta el servicio oficial de componentes de Chromium y conserva las URL oficiales de descarga, sin redirigir esos paquetes al proxy de Brave. Se mantienen HTTPS, CUP y la verificación CRX. La prueba nativa instaló nueve componentes estándar, incluidos Widevine, CRLSet y PKI Metadata. Los componentes exclusivos de Brave no disponibles siguen pendientes; no se cambian sus versiones para ocultar el error. Véase [Auditoría de servicios y límites](docs/SERVICE-AUDIT.md).
+
 La versión 0.8.5 separa el transporte de extensiones del servidor de componentes de Brave. Las instalaciones y actualizaciones de Chrome Web Store utilizan `https://clients2.google.com/service/update2/crx`; el servidor heredado devolvía HTTP 403 incluso en perfiles vacíos. La verificación de instalación comprueba el estado nativo `enabled`, la extensión presente en el perfil y la respuesta HTTP 200 del transporte oficial, después de que el usuario confirme los permisos.
 
 La versión 0.8.4 recompila el motor con `is_debug=false`, `dcheck_always_on=false` y `enable_expensive_dchecks=false`. La configuración anterior activaba comprobaciones de desarrollo incluso en la compilación sin depuración; un minivolcado local identificó el cierre `STATUS_BREAKPOINT` en `ScriptPromiseResolverBase::Dispose` durante la recolección de memoria de Blink. Las opciones de distribución quedan explícitas en `config/build-flags.json`.
