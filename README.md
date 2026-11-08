@@ -4,6 +4,8 @@ Navegador independiente para Windows x64 basado en Brave Core y Chromium. Interf
 
 ## Estado
 
+La versión 0.8.8 vuelve a asociar los paneles laterales con sus pestañas fijadas restauradas al reiniciar. Pulsar el icono reutiliza ese documento en vez de crear otra pestaña. La búsqueda se limita a la ventana actual y respeta las pestañas normales. Los duplicados que ya existían se conservan para evitar cerrar trabajo del usuario.
+
 La versión 0.8.7 conserva los detalles internos de los favicons al elegir iconos monocromáticos, utiliza un indicador de acento para el panel activo y muestra el botón nativo de perfil incluso cuando solo existe uno. El selector administra perfiles locales; no habilita sincronización con Google ni Brave Sync.
 
 La versión 0.8.6 corrige dos dependencias del actualizador: consulta el servicio oficial de componentes de Chromium y conserva las URL oficiales de descarga, sin redirigir esos paquetes al proxy de Brave. Se mantienen HTTPS, CUP y la verificación CRX. La prueba nativa instaló nueve componentes estándar, incluidos Widevine, CRLSet y PKI Metadata. Los componentes exclusivos de Brave no disponibles siguen pendientes; no se cambian sus versiones para ocultar el error. Véase [Auditoría de servicios y límites](docs/SERVICE-AUDIT.md).

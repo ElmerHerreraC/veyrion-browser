@@ -86,4 +86,6 @@ const {integrateComponentTransport} = await import('./integrate-component-transp
 integrateComponentTransport(source)
 const {integrateProfileIcons} = await import('./integrate-profile-icons.mjs')
 integrateProfileIcons(source)
+const {integratePanelRestore} = await import('./integrate-panel-restore.mjs')
+integratePanelRestore(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')

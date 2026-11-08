@@ -1,5 +1,7 @@
 # Barra lateral y tableros
 
+Desde 0.8.8, al pulsar un icono después de restaurar la sesión, el panel busca su pestaña fijada existente en la misma ventana y reutiliza el documento. Una dirección raíz admite la navegación interna del mismo sitio, como una redirección al abrir una aplicación. Los enlaces específicos mantienen coincidencia de dirección sin fragmento. Las pestañas normales y los duplicados preexistentes no se cierran automáticamente.
+
 En 0.8.3, **Ahorrar recursos de paneles ocultos**, dentro de la tuerca lateral, pausa los temporizadores de los paneles al ocultarlos y los reanuda al abrirlos. Sus avisos pueden retrasarse; desactiva la opción y reabre el panel para mantener actividad continua. Audio, captura y conexiones WebRTC activos no se suspenden. Los documentos se conservan sin cierre automático para proteger borradores y sesiones. No se garantiza un límite fijo de RAM.
 
 Desde 0.8.2, el engranaje abre la configuración de la barra lateral y los tableros en un panel compacto. Se retiran los accesos duplicados de tres puntos y cuadrícula. El modo oscuro forzado se activa dentro de ese panel. Los accesos a Descargas y Extensiones se pueden mostrar, ocultar y reordenar junto con los demás iconos.
