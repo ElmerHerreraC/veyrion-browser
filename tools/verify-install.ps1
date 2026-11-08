@@ -13,8 +13,8 @@ if ($AllowUpgrade -and (Test-Path -LiteralPath $installedExe)) {
   if ($running) { throw 'El instalador está preparado. Cierra Veyrion antes de ejecutar la prueba de actualización; no se cerrarán tus ventanas automáticamente.' }
 }
 $log = Join-Path $project 'artifacts\installer-test.log'
-$arguments = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="desktopicon" /DIR="' + $installedDir + '" /LOG="' + $log + '"'
-$process = Start-Process -FilePath $setup -ArgumentList $arguments -PassThru -WindowStyle Hidden
+$arguments = '/SILENT /SUPPRESSMSGBOXES /NORESTART /NOCLOSEAPPLICATIONS /TASKS="desktopicon" /DIR="' + $installedDir + '" /LOG="' + $log + '"'
+$process = Start-Process -FilePath $setup -ArgumentList $arguments -PassThru -WindowStyle Normal
 $process.WaitForExit()
 if ($process.ExitCode -ne 0) { throw "El instalador falló: $($process.ExitCode). Revisa $log" }
 $info = (Get-Item -LiteralPath $installedExe).VersionInfo
@@ -44,4 +44,3 @@ if ($QuickVerify) {
 if ($LASTEXITCODE -ne 0) { throw 'Falló la prueba del navegador instalado.' }
 @{ passed=$true; installedExecutable=$installedExe; productName=$info.ProductName; version=$info.ProductVersion; uninstallerPresent=$true } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $project 'artifacts\installation-verification.json')
 Write-Output 'Instalación verificada. Veyrion queda instalado y disponible en el escritorio.'
-

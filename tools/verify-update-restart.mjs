@@ -29,6 +29,10 @@ try{
   // The native infobar queue shows one standard notice at a time. This test
   // represents an existing profile where the initial notice was acknowledged.
   await fs.writeFile(path.join(profile,'Local State'),JSON.stringify({brave:{p3a:{notice_acknowledged:true}}}))
+  if(process.env.VEYRION_TEST_HIDE_SIDEBAR==='1'){
+    await fs.mkdir(path.join(profile,'Default'),{recursive:true})
+    await fs.writeFile(path.join(profile,'Default/Preferences'),JSON.stringify({brave:{sidebar:{sidebar_show_option:3}}}))
+  }
   try{original=await fs.readFile(status)}catch(error){if(error.code!=='ENOENT')throw error}
   await fixture('current',false)
   await start([`--user-data-dir=${profile}`,'chrome://settings/system'])
@@ -59,7 +63,7 @@ try{
   try{await cdp('Browser.close')}catch{}
   for(let i=0;i<100&&child.exitCode===null;i++)await delay(100)
   assert.equal(child.exitCode,0)
-  await fs.writeFile(path.join(root,'artifacts/update-restart-verification-082.json'),JSON.stringify({passed:true,nativeGracefulExit:true,profilePreserved:true,normalTabRestored:true,installerExecuted:false},null,2))
+  await fs.writeFile(path.join(root,'artifacts/update-restart-verification-0100.json'),JSON.stringify({passed:true,nativeGracefulExit:true,profilePreserved:true,normalTabRestored:true,sidebarHidden:process.env.VEYRION_TEST_HIDE_SIDEBAR==='1',installerExecuted:false},null,2))
   await fs.rm(record(pid),{force:true})
   console.log('Native update restart verification passed')
 }finally{
