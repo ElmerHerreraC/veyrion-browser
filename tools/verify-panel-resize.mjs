@@ -9,7 +9,7 @@ const liveMain=process.env.VEYRION_TEST_MAIN_URL
 const server=createServer((req,res)=>{
   const u=new URL(req.url,'http://fixture')
   if(u.pathname==='/event'){events.push(Object.fromEntries(u.searchParams));res.end('OK');return}
-  res.setHeader('Content-Type','text/html');res.end(`<meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel resize fixture</title><input value="Keep this draft"><script>const id=crypto.randomUUID();const report=kind=>fetch('/event?kind='+kind+'&id='+id+'&page='+location.pathname+'&width='+innerWidth);report('load');addEventListener('resize',()=>report('resize'));</script>`)
+  res.setHeader('Content-Type','text/html');res.end(`<meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel resize fixture</title><input value="Keep this draft"><script>const id=crypto.randomUUID();const report=kind=>fetch('/event?kind='+kind+'&id='+id+'&page='+location.pathname+'&visibility='+document.visibilityState+'&width='+innerWidth);report('load');addEventListener('resize',()=>report('resize'));addEventListener('visibilitychange',()=>report('visibility'));</script>`)
 })
 await new Promise(r=>server.listen(0,'127.0.0.1',r));await fs.mkdir(profile,{recursive:true})
 const child=spawn(braveExecutable(),['--headless=new','--remote-debugging-port=0',`--user-data-dir=${profile}`,'--no-first-run','--no-default-browser-check','--no-proxy-server','chrome://newtab/'],{windowsHide:true,stdio:'ignore'})
@@ -45,6 +45,6 @@ try{
     assert.equal(new Set(events.filter(e=>e.page===page).map(e=>e.id)).size,1,'Resize must preserve '+page)
   }
   if(liveMain){await delay(2000);assert.equal((await cdp('Page.getFrameTree',{},mainSession)).frameTree.frame.loaderId,mainLoader);assert.equal(mainNavigations.length,0,'The normal page navigated during resizing')}
-  const report={passed:true,mainTitle,liveMain:Boolean(liveMain),mobile:process.env.VEYRION_TEST_MOBILE === '1',widthChanges:4,panelLoads:1,mainLoads:1,sameDocuments:true,observedWidths:[...new Set(events.map(e=>Number(e.width)))]}
+  const report={passed:true,mainTitle,liveMain:Boolean(liveMain),mobile:process.env.VEYRION_TEST_MOBILE === '1',mainVisibility:events.filter(e=>e.page === '/main').at(-1)?.visibility,widthChanges:4,panelLoads:1,mainLoads:1,sameDocuments:true,observedWidths:[...new Set(events.map(e=>Number(e.width)))]}
   await fs.writeFile(path.join(root,'artifacts/panel-resize-verification.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));await cdp('Browser.close')
 }finally{if(socket?.readyState===WebSocket.OPEN){try{await cdp('Browser.close')}catch{}}socket?.close();if(child.exitCode===null){await delay(500);if(child.exitCode===null)child.kill()}server.close()}
