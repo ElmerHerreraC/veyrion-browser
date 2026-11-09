@@ -98,4 +98,6 @@ const {integrateOpenBrowserData} = await import('./integrate-open-browser-data.m
 integrateOpenBrowserData(source)
 const {integrateUpdateLifecycle} = await import('./integrate-update-lifecycle.mjs')
 integrateUpdateLifecycle(source)
+const {integratePanelMedia} = await import('./integrate-panel-media.mjs')
+integratePanelMedia(source)
 console.log('Inicio integrado en los recursos internos. No requiere --load-extension. Pendiente compilación y prueba nativa.')

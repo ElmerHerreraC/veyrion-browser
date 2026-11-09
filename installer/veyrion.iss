@@ -8,7 +8,7 @@
 [Setup]
 AppId={{6C63BB20-2F16-4AF6-8CED-CBA7E7536C1A}
 AppName=Veyrion
-AppVersion=0.10.0
+AppVersion=0.10.1
 AppPublisher=Veyrion Project
 DefaultDirName={localappdata}\Programs\Veyrion
 DefaultGroupName=Veyrion
@@ -29,7 +29,7 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 [Tasks]
 Name: "desktopicon"; Description: "Crear acceso de Veyrion en el escritorio"
 [Files]
-Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#PayloadDir}\*"; DestDir: "{app}"; Excludes: "*.log,*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Veyrion.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\updater\*"; DestDir: "{app}\updater"; Flags: ignoreversion
 Source: "..\tools\diagnose-veyrion.ps1"; DestDir: "{app}\diagnostics"; Flags: ignoreversion
